@@ -4,29 +4,115 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Patient Records</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div class="view-toggle">
-    <button onclick="setView('grid')">Grid View</button>
-    <button onclick="setView('list')">List View</button>
-</div>
+<main>
+    <div class="view-toggle">
+        <button id="toggleViewBtn">Switch to List View</button>
+    </div>
+    <div id="grid-container"></div>
+</main>
 
-<div class="header-row" id="header-row">
-    <div>Name</div>
-    <div>Last Updated</div>
-    <div>Age</div>
-    <div>Gender</div>
-    <div>Height/Weight</div>
-    <div>NIBP</div>
-    <div>PR</div>
-    <div>SpO<sub>2</sub></div>
-    <div>Temp</div>
-    <div>Status</div>
-    <div></div>
-</div>
-<div id="container" class="grid-view"></div>
+<script>
+    const toggleBtn = document.getElementById('toggleViewBtn');
+    const gridContainer = document.getElementById('grid-container');
+    let currentView = 'grid';
+    let patientsData = [];
 
-<script src="script.js"></script>
+    toggleBtn.addEventListener('click', () => {
+      currentView = currentView === 'grid' ? 'list' : 'grid';
+      toggleBtn.textContent = currentView === 'grid' ? 'Switch to List View' : 'Switch to Grid View';
+      renderPatients();
+    });
+
+    function formatTimestamp(iso) {
+      const d = new Date(iso);
+      return `${d.toLocaleTimeString()}<br>${d.toLocaleDateString()}`;
+    }
+
+    function createCard(p) {
+      return `
+        <div class="card">
+          <div class="card-header">
+            <span>Name: ${p.name}</span>
+            <span>${p.gender}</span>
+            <span>Age: ${p.age}</span>
+          </div>
+          <div class="card-body">
+            <div class="card-left">
+              <div class="avatar">
+                <img src="${p.image}" alt="${p.name}" onerror="this.onerror=null;this.src='images/default-avatar.avif';">
+              </div>
+              <div class="last-updated"><em>Updated:<br>${formatTimestamp(p.lastUpdated)}</em></div>
+            </div>
+            <div class="card-right">
+              <div class="patient-id">Patient ID: ${p.id}</div>
+              <div class="info">
+                <div class="info-label">
+                  <p>Heart Rate</p><p>BP</p><p>SpO<sub>2</sub></p><p>Temp</p><p>Pulse Rate</p>
+                </div>
+                <div class="info-data">
+                  <p>${p.heartRate} bpm</p>
+                  <p>${p.bloodPressure.systolic}/${p.bloodPressure.diastolic} mmHg</p>
+                  <p>${p.spo2}%</p>
+                  <p>${p.temperature.celsius}°C / ${p.temperature.fahrenheit}°F</p>
+                  <p>${p.pulseRate} bpm</p>
+                </div>
+              </div>
+            </div>
+            <button class="edit-btn">Edit</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function createRow(p) {
+      return `
+        <div class="row">
+          <div>${p.name}</div>
+          <div>${formatTimestamp(p.lastUpdated)}</div>
+          <div>${p.age}</div>
+          <div>${p.gender}</div>
+          <div>${p.height || '-'} / ${p.weight || '-'}</div>
+          <div>${p.bloodPressure.systolic}/${p.bloodPressure.diastolic}</div>
+          <div>${p.pulseRate}</div>
+          <div>${p.spo2}%</div>
+          <div>${p.temperature.celsius}°C</div>
+          <div>Status</div>
+          <div><button class="edit-btn">Edit</button></div>
+        </div>
+      `;
+    }
+
+    function renderPatients() {
+      if (currentView === 'list') {
+        const header = `
+          <div class="row header">
+            <div>Name</div><div>Last Updated</div><div>Age</div><div>Gender</div>
+            <div>Height/Weight</div><div>NIBP</div><div>PR</div>
+            <div>SpO<sub>2</sub></div><div>Temp</div><div>Status</div><div></div>
+          </div>
+        `;
+        const rows = patientsData.map(createRow).join('');
+        gridContainer.innerHTML = header + rows;
+        gridContainer.className = 'list-view';
+      } else {
+        gridContainer.innerHTML = patientsData.map(createCard).join('');
+        gridContainer.className = 'grid-view';
+      }
+    }
+
+    function loadPatients() {
+      fetch('patients.json')
+        .then(res => res.json())
+        .then(data => {
+          patientsData = data;
+          renderPatients();
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadPatients);
+</script>
 </body>
 </html>
