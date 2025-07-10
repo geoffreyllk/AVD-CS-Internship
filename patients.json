@@ -11,5 +11,70 @@
     "tempC": 36.3,
     "tempF": 97.1,
     "status": "-"
+  },
+  {
+    "name": "Jane Smith",
+    "age": 45,
+    "gender": "Female",
+    "height": 165,
+    "weight": 60,
+    "nibp": "120/80",
+    "pr": 78,
+    "spo2": 97,
+    "tempC": 36.8,
+    "tempF": 98.2,
+    "status": "Stable"
+  },
+  {
+    "name": "Alice Tan",
+    "age": 38,
+    "gender": "Female",
+    "height": 158,
+    "weight": 55,
+    "nibp": "110/70",
+    "pr": 72,
+    "spo2": 99,
+    "tempC": 36.7,
+    "tempF": 98.1,
+    "status": "Observation"
+  },
+  {
+    "name": "Mark Lee",
+    "age": 67,
+    "gender": "Male",
+    "height": 172,
+    "weight": 80,
+    "nibp": "135/85",
+    "pr": 81,
+    "spo2": 95,
+    "tempC": 37.2,
+    "tempF": 99.0,
+    "status": "Critical"
+  },
+  {
+    "name": "Nina Gomez",
+    "age": 29,
+    "gender": "Female",
+    "height": 170,
+    "weight": 63,
+    "nibp": "115/75",
+    "pr": 70,
+    "spo2": 99,
+    "tempC": 36.5,
+    "tempF": 97.7,
+    "status": "-"
+  },
+  {
+    "name": "Carlos Rivera",
+    "age": 50,
+    "gender": "Male",
+    "height": 178,
+    "weight": 77,
+    "nibp": "125/82",
+    "pr": 76,
+    "spo2": 96,
+    "tempC": 37.0,
+    "tempF": 98.6,
+    "status": "Stable"
   }
 ]
