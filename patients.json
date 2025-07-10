@@ -1,0 +1,15 @@
+[
+  {
+    "name": "John Doe",
+    "age": 56,
+    "gender": "Male",
+    "height": 180,
+    "weight": 70,
+    "nibp": "117/79",
+    "pr": 74,
+    "spo2": 98,
+    "tempC": 36.3,
+    "tempF": 97.1,
+    "status": "-"
+  }
+]

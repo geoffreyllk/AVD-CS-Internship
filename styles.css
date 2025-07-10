@@ -1,0 +1,142 @@
+* {
+    box-sizing: border-box;
+    font-family: serif;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #f0f0f0;
+    padding: 20px;
+}
+
+.view-toggle {
+    margin-bottom: 10px;
+}
+.view-toggle button {
+    padding: 8px 12px;
+    margin-right: 10px;
+    border: none;
+    background-color: #a3d6a2;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+#container.grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+#container.list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.header-row {
+    display: none;
+    grid-template-columns: 1.2fr 1.5fr 0.8fr 1fr 1.2fr 1fr 0.8fr 0.8fr 1.2fr 0.8fr auto;
+    background: #a3d6a2;
+    color: #000;
+    padding: 12px;
+    border-radius: 20px 20px 0 0;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.card {
+    background: #f8f8f8;
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #a3d6a2;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    border-top-left-radius: 25px;
+    border-top-right-radius: 25px;
+}
+
+.card-body {
+    display: flex;
+    padding: 20px;
+    gap: 20px;
+}
+
+.left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+.avatar {
+    width: 100px;
+    height: 100px;
+    background: #ccc;
+    border-radius: 50%;
+}
+.last-updated {
+    font-style: italic;
+    text-align: center;
+}
+
+.right .info p {
+    margin: 4px 0;
+}
+.dept-room {
+    background: #d4e9cd;
+    padding: 6px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+.update-btn {
+    background-color: #d4e9cd;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+/* List view styles */
+#container.list-view .card {
+    display: grid;
+    grid-template-columns: 1.2fr 1.5fr 0.8fr 1fr 1.2fr 1fr 0.8fr 0.8fr 1.2fr 0.8fr auto;
+    align-items: center;
+    padding: 12px 20px;
+    font-size: 1rem;
+}
+
+#container.list-view .card-header,
+#container.list-view .card-body,
+#container.list-view .left,
+#container.list-view .right,
+#container.list-view .dept-room {
+    display: none;
+}
+
+#container.list-view .avatar {
+    width: 60px;
+    height: 60px;
+    background: #ccc;
+    border-radius: 50%;
+    margin: auto;
+}
+
+#container.list-view .update-btn {
+    white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    #container.grid-view {
+        grid-template-columns: 1fr;
+    }
+}
