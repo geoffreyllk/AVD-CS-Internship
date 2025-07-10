@@ -74,11 +74,11 @@
           <div>${formatTimestamp(p.lastUpdated)}</div>
           <div>${p.age}</div>
           <div>${p.gender}</div>
-          <div>${p.height || '-'} / ${p.weight || '-'}</div>
+          <div>${p.height || '-'}cm / ${p.weight || '-'}kg</div>
           <div>${p.bloodPressure.systolic}/${p.bloodPressure.diastolic}</div>
           <div>${p.pulseRate}</div>
           <div>${p.spo2}%</div>
-          <div>${p.temperature.celsius}°C</div>
+          <div>${p.temperature.celsius}/${p.temperature.fahrenheit}</div>
           <div>Status</div>
           <div><button class="edit-btn">Edit</button></div>
         </div>
@@ -90,8 +90,8 @@
         const header = `
           <div class="row header">
             <div>Name</div><div>Last Updated</div><div>Age</div><div>Gender</div>
-            <div>Height/Weight</div><div>NIBP</div><div>PR</div>
-            <div>SpO<sub>2</sub></div><div>Temp</div><div>Status</div><div></div>
+            <div>Height/Weight</div><div>NIBP(mmHg)</div><div>PR(bpm)</div>
+            <div>SpO<sub>2</sub></div><div>Temp(°C/°F)</div><div>Status</div><div></div>
           </div>
         `;
         const rows = patientsData.map(createRow).join('');
