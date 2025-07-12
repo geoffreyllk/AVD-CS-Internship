@@ -145,3 +145,108 @@ body {
   background: #a3d6a2;
   font-weight: bold;
 }
+
+
+/* Edit Patient Info Overlay */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h3 {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+#editForm {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 1fr;
+    justify-content: space-between;
+    width: 100%;
+}
+
+@media (min-width: 480px) {
+    #editForm {
+        grid-template-columns: 1fr 1fr;
+        gap: 16px 20px;
+    }
+}
+
+#editForm label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.95rem;
+    font-weight: 500;
+    gap: 4px;
+    color: #333;
+    width: 100%;
+}
+
+#editForm input {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    background-color: #f9f9f9;
+    width: 100%;
+}
+
+.form-buttons {
+    display: flex;
+    justify-content: end;
+    gap: 10px;
+    grid-column: span 2;
+}
+.form-buttons button {
+    grid-column: span 1;
+    padding: 10px 20px 10px 20px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.form-buttons #cancel-btn {
+    background-color: #f44336;
+    color: white;
+}
+
+.form-buttons #save-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.form-buttons #cancel-btn:hover {
+    background-color: #d32f2f;
+}
+
+.form-buttons #save-btn:hover {
+    background-color: #388e3c;
+}
+

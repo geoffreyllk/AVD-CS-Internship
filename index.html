@@ -7,112 +7,197 @@
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<main>
-    <div class="view-toggle">
-        <button id="toggleViewBtn">Switch to List View</button>
-    </div>
-    <div id="grid-container"></div>
-</main>
-
-<script>
-    const toggleBtn = document.getElementById('toggleViewBtn');
-    const gridContainer = document.getElementById('grid-container');
-    let currentView = 'grid';
-    let patientsData = [];
-
-    toggleBtn.addEventListener('click', () => {
-      currentView = currentView === 'grid' ? 'list' : 'grid';
-      toggleBtn.textContent = currentView === 'grid' ? 'Switch to List View' : 'Switch to Grid View';
-      renderPatients();
-    });
-
-    function formatTimestamp(iso) {
-      const d = new Date(iso);
-      return `${d.toLocaleTimeString()}<br>${d.toLocaleDateString()}`;
-    }
-
-    function createCard(p) {
-      return `
-        <div class="card">
-          <div class="card-header">
-            <span>Name: ${p.name}</span>
-            <span>${p.gender}</span>
-            <span>Age: ${p.age}</span>
-          </div>
-          <div class="card-body">
-            <div class="card-left">
-              <div class="avatar">
-                <img src="${p.image}" alt="${p.name}" onerror="this.onerror=null;this.src='images/default-avatar.avif';">
-              </div>
-              <div class="last-updated"><em>Updated:<br>${formatTimestamp(p.lastUpdated)}</em></div>
-            </div>
-            <div class="card-right">
-              <div class="patient-id">Patient ID: ${p.id}</div>
-              <div class="info">
-                <div class="info-label">
-                  <p>Heart Rate</p><p>BP</p><p>SpO<sub>2</sub></p><p>Temp</p><p>Pulse Rate</p>
-                </div>
-                <div class="info-data">
-                  <p>${p.heartRate} bpm</p>
-                  <p>${p.bloodPressure.systolic}/${p.bloodPressure.diastolic} mmHg</p>
-                  <p>${p.spo2}%</p>
-                  <p>${p.temperature.celsius}°C / ${p.temperature.fahrenheit}°F</p>
-                  <p>${p.pulseRate} bpm</p>
-                </div>
-              </div>
-            </div>
-            <button class="edit-btn">Edit</button>
-          </div>
+    <main>
+        <div class="view-toggle">
+            <button id="toggleViewBtn">Switch to List View</button>
         </div>
-      `;
-    }
 
-    function createRow(p) {
-      return `
-        <div class="row">
-          <div>${p.name}</div>
-          <div>${formatTimestamp(p.lastUpdated)}</div>
-          <div>${p.age}</div>
-          <div>${p.gender}</div>
-          <div>${p.height || '-'}cm / ${p.weight || '-'}kg</div>
-          <div>${p.bloodPressure.systolic}/${p.bloodPressure.diastolic}</div>
-          <div>${p.pulseRate}</div>
-          <div>${p.spo2}%</div>
-          <div>${p.temperature.celsius}/${p.temperature.fahrenheit}</div>
-          <div>Status</div>
-          <div><button class="edit-btn">Edit</button></div>
+        <!--Patient Grid-->
+        <div id="grid-container"></div>
+
+        <!--Edit Patient Info Overlay-->
+        <div id="editModal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Edit Patient</h3>
+                <form id="editForm">
+                    <input type="hidden" id="editId" />
+                    <label>Name<input type="text" id="editName" /></label>
+                    <label>Age<input type="number" id="editAge" /></label>
+                    <label>Gender<input type="text" id="editGender" /></label>
+                    <label>Pulse Rate<input type="number" id="editPulse" /></label>
+                    <label>SpO₂<input type="number" id="editSpO2" /></label>
+                    <label>Heart Rate<input type="number" id="editHeartRate" /></label>
+                    <label>Temperature (°C)<input type="number" step="0.1" id="editTempC" /></label>
+                    <label>Temperature (°F)<input type="number" step="0.1" id="editTempF" /></label>
+                    <label>Systolic<input type="number" id="editSys" /></label>
+                    <label>Diastolic<input type="number" id="editDia" /></label>
+                    <div class="form-buttons">
+                        <button type="button" id="cancel-btn">Cancel</button>
+                        <button type="submit" id="save-btn">Save</button>
+                    </div>
+                </form>
+            </div>
         </div>
-      `;
-    }
+    </main>
 
-    function renderPatients() {
-      if (currentView === 'list') {
-        const header = `
-          <div class="row header">
-            <div>Name</div><div>Last Updated</div><div>Age</div><div>Gender</div>
-            <div>Height/Weight</div><div>NIBP(mmHg)</div><div>PR(bpm)</div>
-            <div>SpO<sub>2</sub></div><div>Temp(°C/°F)</div><div>Status</div><div></div>
-          </div>
-        `;
-        const rows = patientsData.map(createRow).join('');
-        gridContainer.innerHTML = header + rows;
-        gridContainer.className = 'list-view';
-      } else {
-        gridContainer.innerHTML = patientsData.map(createCard).join('');
-        gridContainer.className = 'grid-view';
-      }
-    }
+    <script>
+        const toggleBtn = document.getElementById('toggleViewBtn');
+        const gridContainer = document.getElementById('grid-container');
+        let currentView = 'grid';
+        let patientsData = [];
 
-    function loadPatients() {
-      fetch('patients.json')
-        .then(res => res.json())
-        .then(data => {
-          patientsData = data;
-          renderPatients();
+        toggleBtn.addEventListener('click', () => {
+            currentView = currentView === 'grid' ? 'list' : 'grid';
+            toggleBtn.textContent = currentView === 'grid' ? 'Switch to List View' : 'Switch to Grid View';
+            renderPatients();
         });
-    }
 
-    document.addEventListener('DOMContentLoaded', loadPatients);
-</script>
+        function formatTimestamp(iso) {
+            const d = new Date(iso);
+            return `${d.toLocaleTimeString()}<br>${d.toLocaleDateString()}`;
+        }
+
+        function createCard(p) {
+            return `
+                <div class="card">
+                    <div class="card-header">
+                        <span>Name: ${p.name}</span>
+                        <span>${p.gender}</span>
+                        <span>Age: ${p.age}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-left">
+                            <div class="avatar">
+                                <img src="${p.image}" alt="${p.name}" onerror="this.onerror=null;this.src='images/default-avatar.avif';">
+                            </div>
+                            <div class="last-updated"><em>Updated:<br>${formatTimestamp(p.lastUpdated)}</em></div>
+                        </div>
+                        <div class="card-right">
+                            <div class="patient-id">Patient ID: ${p.id}</div>
+                            <div class="info">
+                                <div class="info-label">
+                                    <p>Heart Rate</p><p>BP</p><p>SpO<sub>2</sub></p><p>Temp</p><p>Pulse Rate</p>
+                                </div>
+                                <div class="info-data">
+                                    <p>${p.heartRate} bpm</p>
+                                    <p>${p.bloodPressure.systolic}/${p.bloodPressure.diastolic} mmHg</p>
+                                    <p>${p.spo2}%</p>
+                                    <p>${p.temperature.celsius}°C / ${p.temperature.fahrenheit}°F</p>
+                                    <p>${p.pulseRate} bpm</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="edit-btn">Edit</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createRow(p) {
+            return `
+                <div class="row">
+                    <div>${p.name}</div>
+                    <div>${formatTimestamp(p.lastUpdated)}</div>
+                    <div>${p.age}</div>
+                    <div>${p.gender}</div>
+                    <div>${p.height || '-'}cm / ${p.weight || '-'}kg</div>
+                    <div>${p.bloodPressure.systolic}/${p.bloodPressure.diastolic}</div>
+                    <div>${p.pulseRate}</div>
+                    <div>${p.spo2}%</div>
+                    <div>${p.temperature.celsius}/${p.temperature.fahrenheit}</div>
+                    <div>Status</div>
+                    <div><button class="edit-btn">Edit</button></div>
+                </div>
+            `;
+        }
+
+        function renderPatients() {
+            if (currentView === 'list') {
+                const header = `
+                    <div class="row header">
+                        <div>Name</div><div>Last Updated</div><div>Age</div><div>Gender</div>
+                        <div>Height/Weight</div><div>NIBP(mmHg)</div><div>PR(bpm)</div>
+                        <div>SpO<sub>2</sub></div><div>Temp(°C/°F)</div><div>Status</div><div></div>
+                    </div>
+                `;
+                const rows = patientsData.map(createRow).join('');
+                gridContainer.innerHTML = header + rows;
+                gridContainer.className = 'list-view';
+            } else {
+                gridContainer.innerHTML = patientsData.map(createCard).join('');
+                gridContainer.className = 'grid-view';
+            }
+
+            document.querySelectorAll('.edit-btn').forEach((btn, index) => {
+                btn.addEventListener('click', () => showEditModal(patientsData[index]));
+            });
+        }
+
+        function loadPatients() {
+            fetch('patients.json')
+                .then(res => res.json())
+                .then(data => {
+                    patientsData = data;
+                    renderPatients();
+                });
+        }
+
+        function showEditModal(patient) {
+            document.getElementById('editId').value = patient.id;
+            document.getElementById('editName').value = patient.name;
+            document.getElementById('editAge').value = patient.age;
+            document.getElementById('editGender').value = patient.gender;
+            document.getElementById('editPulse').value = patient.pulseRate;
+            document.getElementById('editSpO2').value = patient.spo2;
+            document.getElementById('editHeartRate').value = patient.heartRate;
+            document.getElementById('editTempC').value = patient.temperature.celsius;
+            document.getElementById('editTempF').value = patient.temperature.fahrenheit;
+            document.getElementById('editSys').value = patient.bloodPressure.systolic;
+            document.getElementById('editDia').value = patient.bloodPressure.diastolic;
+
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        document.getElementById('cancel-btn').addEventListener('click', () => {
+            document.getElementById('editModal').classList.add('hidden');
+        });
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById('editId').value;
+            const patient = patientsData.find(p => p.id == id);
+            if (!patient) return;
+
+            patient.name = document.getElementById('editName').value;
+            patient.age = parseInt(document.getElementById('editAge').value);
+            patient.gender = document.getElementById('editGender').value;
+            patient.pulseRate = parseInt(document.getElementById('editPulse').value);
+            patient.spo2 = parseInt(document.getElementById('editSpO2').value);
+            patient.heartRate = parseInt(document.getElementById('editHeartRate').value);
+            patient.temperature.celsius = parseFloat(document.getElementById('editTempC').value);
+            patient.temperature.fahrenheit = parseFloat(document.getElementById('editTempF').value);
+            patient.bloodPressure.systolic = parseInt(document.getElementById('editSys').value);
+            patient.bloodPressure.diastolic = parseInt(document.getElementById('editDia').value);
+            patient.lastUpdated = new Date().toISOString();
+
+            const response = await fetch(`/patients/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(patient)
+            });
+
+            if (response.ok) {
+                document.getElementById('editModal').classList.add('hidden');
+                renderPatients();
+            } else {
+                alert("Failed to save changes.");
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadPatients);
+    </script>
 </body>
 </html>

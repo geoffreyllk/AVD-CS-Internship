@@ -3,14 +3,20 @@
     "id": "P001",
     "name": "John Doe",
     "gender": "Male",
-    "age": 56,
+    "age": 54,
     "image": "images/john.jpg",
     "heartRate": 74,
-    "bloodPressure": { "systolic": 117, "diastolic": 79 },
+    "bloodPressure": {
+      "systolic": 117,
+      "diastolic": 79
+    },
     "spo2": 98,
-    "temperature": { "celsius": 36.3, "fahrenheit": 97.3 },
+    "temperature": {
+      "celsius": 36.3,
+      "fahrenheit": 97.3
+    },
     "pulseRate": 74,
-    "lastUpdated": "2025-07-10T14:30:00"
+    "lastUpdated": "2025-07-12T05:23:30.841Z"
   },
   {
     "id": "P002",
@@ -19,9 +25,15 @@
     "age": 43,
     "image": "images/amira.jpg",
     "heartRate": 82,
-    "bloodPressure": { "systolic": 124, "diastolic": 84 },
+    "bloodPressure": {
+      "systolic": 124,
+      "diastolic": 84
+    },
     "spo2": 97,
-    "temperature": { "celsius": 37.1, "fahrenheit": 98.8 },
+    "temperature": {
+      "celsius": 37.1,
+      "fahrenheit": 98.8
+    },
     "pulseRate": 81,
     "lastUpdated": "2025-07-10T15:10:00"
   },
@@ -32,9 +44,15 @@
     "age": 68,
     "image": "images/wei-lun.jpg",
     "heartRate": 65,
-    "bloodPressure": { "systolic": 110, "diastolic": 75 },
+    "bloodPressure": {
+      "systolic": 110,
+      "diastolic": 75
+    },
     "spo2": 96,
-    "temperature": { "celsius": 36.5, "fahrenheit": 97.7 },
+    "temperature": {
+      "celsius": 36.5,
+      "fahrenheit": 97.7
+    },
     "pulseRate": 66,
     "lastUpdated": "2025-07-10T13:45:00"
   },
@@ -45,9 +63,15 @@
     "age": 29,
     "image": "images/sophia.jpg",
     "heartRate": 78,
-    "bloodPressure": { "systolic": 120, "diastolic": 80 },
+    "bloodPressure": {
+      "systolic": 120,
+      "diastolic": 80
+    },
     "spo2": 99,
-    "temperature": { "celsius": 36.8, "fahrenheit": 98.2 },
+    "temperature": {
+      "celsius": 36.8,
+      "fahrenheit": 98.2
+    },
     "pulseRate": 77,
     "lastUpdated": "2025-07-10T14:55:00"
   }
