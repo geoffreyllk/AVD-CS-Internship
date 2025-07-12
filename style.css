@@ -7,8 +7,48 @@
 
 body {
   background: #f2f2f2;
-  padding: 20px;
   color: #222;
+  main {
+    padding: 20px;
+  }
+}
+
+header {
+  margin: 10px;
+  display: row;
+  overflow: hidden;
+}
+
+#page-title {
+  font-size: 30px;
+  font-style: italic;
+  float: left;
+  margin: 25px 5px;
+  font-family: "Times New Roman", Times, serif;
+}
+
+header img{
+  float: right;
+  width: 80px;
+}
+
+.navbar{
+  width: 100vw;
+  background-color: #bcdcb5;
+  margin: 0;
+  ul{
+    list-style-type: none;
+    overflow: hidden;
+  }
+
+  li{
+    float: left;
+    padding: 20px;
+  }
+
+  li:hover{
+    background-color: #a3d6a2;
+  }
 }
 
 .view-toggle {
