@@ -5,53 +5,128 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Patient Records</title>
     <link rel="stylesheet" href="style.css" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <div id="page-title">Patient Records</div>
-        <img src="images/logo-Placeholder.jpg" alt="logo_placeholder">
-    </header>
-
-    <nav class="navbar">
-        <ul>
-            <li>Home</li>
-        </ul>
-    </nav>
-
-    <main>
-        <div class="view-toggle">
-            <button id="toggleViewBtn">Switch to List View</button>
+    <!--Security Overlay-->
+    <div id="overlay">
+        <div id="entry-box">
+            <h2>Enter your hospital ID</h2>
+            <form id="entry-form">
+                <div class="input-wrapper">
+                    <input type="password" id="code-input" placeholder="Enter hospital ID" required />
+                    <span id="toggle-visibility" class="material-icons" onclick="toggleVisibility()">visibility</span>
+                </div>
+                <button type="submit">Submit</button>
+            </form>
+            <p id="error-msg"></p>
         </div>
+    </div>
 
-        <!--Patient Grid-->
-        <div id="grid-container"></div>
+    <div class="main-content">
+        <header>
+            <div id="page-title">Patient Records</div>
+            <img src="images/logo-Placeholder.jpg" alt="logo_placeholder">
+        </header>
 
-        <!--Edit Patient Info Overlay-->
-        <div id="editModal" class="modal hidden">
-            <div class="modal-content">
-                <h3>Edit Patient</h3>
-                <form id="editForm">
-                    <input type="hidden" id="editId" />
-                    <label>Name<input type="text" id="editName" /></label>
-                    <label>Age<input type="number" id="editAge" /></label>
-                    <label>Gender<input type="text" id="editGender" /></label>
-                    <label>Pulse Rate<input type="number" id="editPulse" /></label>
-                    <label>SpO₂<input type="number" id="editSpO2" /></label>
-                    <label>Heart Rate<input type="number" id="editHeartRate" /></label>
-                    <label>Temperature (°C)<input type="number" step="0.1" id="editTempC" /></label>
-                    <label>Temperature (°F)<input type="number" step="0.1" id="editTempF" /></label>
-                    <label>Systolic<input type="number" id="editSys" /></label>
-                    <label>Diastolic<input type="number" id="editDia" /></label>
-                    <div class="form-buttons">
-                        <button type="button" id="cancel-btn">Cancel</button>
-                        <button type="submit" id="save-btn">Save</button>
-                    </div>
-                </form>
+        <nav class="navbar">
+            <ul>
+                <li>Home</li>
+            </ul>
+        </nav>
+
+        <main>
+            <div class="view-toggle">
+                <button id="toggleViewBtn">Switch to List View</button>
             </div>
-        </div>
-    </main>
+
+            <!--Patient Grid-->
+            <div id="grid-container"></div>
+
+            <!--Edit Patient Info Overlay-->
+            <div id="editModal" class="modal hidden">
+                <div class="modal-content">
+                    <h3>Edit Patient</h3>
+                    <form id="editForm">
+                        <input type="hidden" id="editId" />
+                        <label>Name<input type="text" id="editName" /></label>
+                        <label>Age<input type="number" id="editAge" /></label>
+                        <label>Gender<input type="text" id="editGender" /></label>
+                        <label>Pulse Rate<input type="number" id="editPulse" /></label>
+                        <label>SpO₂<input type="number" id="editSpO2" /></label>
+                        <label>Heart Rate<input type="number" id="editHeartRate" /></label>
+                        <label>Temperature (°C)<input type="number" step="0.1" id="editTempC" /></label>
+                        <label>Temperature (°F)<input type="number" step="0.1" id="editTempF" /></label>
+                        <label>Systolic<input type="number" id="editSys" /></label>
+                        <label>Diastolic<input type="number" id="editDia" /></label>
+                        <div class="form-buttons">
+                            <button type="button" id="cancel-btn">Cancel</button>
+                            <button type="submit" id="save-btn">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <script>
+        //SECURITY SYSTEM CODE
+        let validIDs = [];
+
+        window.onload = function () {
+          fetch('hospital_id.json')
+            .then(response => {
+              if (!response.ok) throw new Error("Failed to fetch hospital IDs");
+              return response.json();
+            })
+            .then(data => {
+              validIDs = data.validHospitalIDs || [];
+
+              if (sessionStorage.getItem("authenticated") === "true") {
+                document.getElementById("overlay").style.display = "none";
+              }
+            })
+            .catch(err => {
+              console.error("Error loading hospital_id.json:", err);
+              document.getElementById("error-msg").textContent = "⚠ Failed to load hospital IDs.";
+            });
+        };
+
+        document.getElementById("entry-form").addEventListener("submit", function (event) {
+          event.preventDefault();
+          checkHospitalID();
+        });
+
+        function checkHospitalID() {
+          const inputField = document.getElementById("code-input");
+          const input = inputField.value.trim().toUpperCase();
+          const errorMsg = document.getElementById("error-msg");
+
+          if (validIDs.map(id => id.toUpperCase()).includes(input)) {
+            sessionStorage.setItem("authenticated", "true");
+            document.getElementById("overlay").style.display = "none";
+          } else {
+            errorMsg.textContent = "❌Invalid hospital ID. Try again.";
+            inputField.value = "";
+            inputField.focus();
+          }
+        }
+
+        //Toggle for view/ hide ID
+        function toggleVisibility() {
+          const input = document.getElementById("code-input");
+          const icon = document.getElementById("toggle-visibility");
+
+          if (input.type === "password") {
+            input.type = "text";
+            icon.textContent = "visibility_off";
+          } else {
+            input.type = "password";
+            icon.textContent = "visibility";
+          }
+        }
+        //END OF SECURITY SYSTEM CODE
+
         const toggleBtn = document.getElementById('toggleViewBtn');
         const gridContainer = document.getElementById('grid-container');
         let currentView = 'grid';
