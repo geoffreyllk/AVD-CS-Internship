@@ -4,64 +4,87 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Patient Records</title>
-    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
-<body>
-    <!--Security Overlay-->
-    <div id="overlay">
-        <div id="entry-box">
-            <h2>Enter your hospital ID</h2><br>
-            <form id="entry-form">
-                <div class="input-wrapper">
-                    <input type="password" id="code-input" placeholder="Enter hospital ID" required />
-                    <span id="toggle-visibility" class="material-icons" onclick="toggleVisibility()">visibility</span>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <!-- Security Overlay -->
+    <div id="overlay" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
+            <h2 class="text-xl font-semibold mb-4 text-center">Enter your hospital ID</h2>
+            <form id="entry-form" class="space-y-4">
+                <div class="relative">
+                    <input type="password" id="code-input" placeholder="Hospital ID" required class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span id="toggle-visibility" class="material-icons absolute top-2.5 right-3 text-gray-500 cursor-pointer" onclick="toggleVisibility()">visibility</span>
                 </div>
-                <button type="submit">Submit</button>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">Submit</button>
+                <p id="error-msg" class="text-red-500 text-sm text-center"></p>
             </form>
-            <p id="error-msg"></p>
         </div>
     </div>
 
+    <!-- Main Content -->
     <div class="main-content">
-        <header>
-            <div id="page-title">Patient Records</div>
-            <img src="images/logo-Placeholder.jpg" alt="logo_placeholder">
+        <header class="bg-blue-700 text-white p-4 flex justify-between items-center shadow">
+            <h1 class="text-2xl font-bold">Patient Records</h1>
+            <img src="images/logo-placeholder.jpg" alt="Logo" class="h-10 w-auto">
         </header>
 
-        <nav class="navbar">
-            <ul>
-                <li>Home</li>
+        <nav class="bg-blue-600 text-white px-4 py-2 shadow">
+            <ul class="flex space-x-4">
+                <li class="hover:underline cursor-pointer">Home</li>
             </ul>
         </nav>
 
-        <main>
-            <div class="view-toggle">
-                <button id="toggleViewBtn">Switch to List View</button>
+        <main class="p-4">
+            <div class="mb-4">
+                <button id="toggleViewBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">Switch to List View</button>
             </div>
 
-            <!--Patient Grid-->
-            <div id="grid-container"></div>
+            <div id="grid-container" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 transition-all"></div>
 
-            <!--Edit Patient Info Overlay-->
-            <div id="editModal" class="modal hidden">
-                <div class="modal-content">
-                    <h3>Edit Patient</h3>
-                    <form id="editForm">
+            <!-- Edit Modal -->
+            <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-3xl animate-fadeIn">
+                    <h3 class="text-2xl font-semibold mb-4 text-center">Edit Patient</h3>
+                    <form id="editForm" class="grid grid-cols-2 gap-4">
                         <input type="hidden" id="editId" />
-                        <label>Name<input type="text" id="editName" /></label>
-                        <label>Age<input type="number" id="editAge" /></label>
-                        <label>Gender<input type="text" id="editGender" /></label>
-                        <label>Pulse Rate<input type="number" id="editPulse" /></label>
-                        <label>SpO₂<input type="number" id="editSpO2" /></label>
-                        <label>Heart Rate<input type="number" id="editHeartRate" /></label>
-                        <label>Temperature (°C)<input type="number" step="0.1" id="editTempC" /></label>
-                        <label>Temperature (°F)<input type="number" step="0.1" id="editTempF" /></label>
-                        <label>Systolic<input type="number" id="editSys" /></label>
-                        <label>Diastolic<input type="number" id="editDia" /></label>
-                        <div class="form-buttons">
-                            <button type="button" id="cancel-btn">Cancel</button>
-                            <button type="submit" id="save-btn">Save</button>
+
+                        <label class="flex flex-col text-sm font-medium">
+                            Name:<input type="text" id="editName" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                        </label>
+                        <label class="flex flex-col text-sm font-medium">
+                            Age:<input type="number" id="editAge" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                        </label>
+                        <label class="flex flex-col text-sm font-medium">
+                            Gender:<input type="text" id="editGender" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                        </label>
+                        <label class="flex flex-col text-sm font-medium">
+                            Pulse Rate:<input type="number" id="editPulse" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                        </label>
+                        <label class="flex flex-col text-sm font-medium">
+                            SpO₂:<input type="number" id="editSpO2" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                        </label>
+                        <label class="flex flex-col text-sm font-medium">
+                            Heart Rate:<input type="number" id="editHeartRate" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                        </label>
+                        <label class="flex flex-col text-sm font-medium">
+                            Temp (°C):<input type="number" step="0.1" id="editTempC" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                        </label>
+                        <label class="flex flex-col text-sm font-medium">
+                            Temp (°F):<input type="number" step="0.1" id="editTempF" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                        </label>
+                        <label class="flex flex-col text-sm font-medium">
+                            Systolic:<input type="number" id="editSys" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                        </label>
+                        <label class="flex flex-col text-sm font-medium">
+                            Diastolic:<input type="number" id="editDia" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                        </label>
+
+                        <div class="col-span-2 flex justify-end pt-3 space-x-3">
+                            <button type="button" id="cancel-btn" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">Save</button>
                         </div>
                     </form>
                 </div>
@@ -70,63 +93,47 @@
     </div>
 
     <script>
-        //SECURITY SYSTEM CODE
+        // Authentication (unchanged)
         let validIDs = [];
-
         window.onload = function () {
-          fetch('hospital_id.json')
-            .then(response => {
-              if (!response.ok) throw new Error("Failed to fetch hospital IDs");
-              return response.json();
-            })
-            .then(data => {
-              validIDs = data.validHospitalIDs || [];
-
-              if (sessionStorage.getItem("authenticated") === "true") {
-                document.getElementById("overlay").style.display = "none";
-              }
-            })
-            .catch(err => {
-              console.error("Error loading hospital_id.json:", err);
-              document.getElementById("error-msg").textContent = "⚠ Failed to load hospital IDs.";
-            });
+            fetch('hospital_id.json')
+                .then(res => res.json())
+                .then(data => {
+                    validIDs = data.validHospitalIDs || [];
+                    if (sessionStorage.getItem("authenticated") === "true") {
+                        document.getElementById("overlay").style.display = "none";
+                    }
+                })
+                .catch(err => {
+                    console.error("Error loading hospital_id.json:", err);
+                    document.getElementById("error-msg").textContent = "⚠ Failed to load hospital IDs.";
+                });
         };
 
-        document.getElementById("entry-form").addEventListener("submit", function (event) {
-          event.preventDefault();
-          checkHospitalID();
+        document.getElementById("entry-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+            const input = document.getElementById("code-input").value.trim().toUpperCase();
+            if (validIDs.map(id => id.toUpperCase()).includes(input)) {
+                sessionStorage.setItem("authenticated", "true");
+                document.getElementById("overlay").style.display = "none";
+            } else {
+                document.getElementById("error-msg").textContent = "❌ Invalid hospital ID. Try again.";
+                document.getElementById("code-input").value = "";
+            }
         });
-
-        function checkHospitalID() {
-          const inputField = document.getElementById("code-input");
-          const input = inputField.value.trim().toUpperCase();
-          const errorMsg = document.getElementById("error-msg");
-
-          if (validIDs.map(id => id.toUpperCase()).includes(input)) {
-            sessionStorage.setItem("authenticated", "true");
-            document.getElementById("overlay").style.display = "none";
-          } else {
-            errorMsg.textContent = "❌Invalid hospital ID. Try again.";
-            inputField.value = "";
-            inputField.focus();
-          }
-        }
-
-        //Toggle for view/ hide ID
         function toggleVisibility() {
-          const input = document.getElementById("code-input");
-          const icon = document.getElementById("toggle-visibility");
-
-          if (input.type === "password") {
-            input.type = "text";
-            icon.textContent = "visibility_off";
-          } else {
-            input.type = "password";
-            icon.textContent = "visibility";
-          }
+            const input = document.getElementById("code-input");
+            const icon = document.getElementById("toggle-visibility");
+            if (input.type === "password") {
+                input.type = "text";
+                icon.textContent = "visibility_off";
+            } else {
+                input.type = "password";
+                icon.textContent = "visibility";
+            }
         }
-        //END OF SECURITY SYSTEM CODE
 
+        // View Toggle
         const toggleBtn = document.getElementById('toggleViewBtn');
         const gridContainer = document.getElementById('grid-container');
         let currentView = 'grid';
@@ -140,40 +147,27 @@
 
         function formatTimestamp(iso) {
             const d = new Date(iso);
-            return `${d.toLocaleTimeString()}<br>${d.toLocaleDateString()}`;
+            return `${d.toLocaleTimeString()} ${d.toLocaleDateString()}`;
         }
 
         function createCard(p) {
             return `
-                <div class="card">
-                    <div class="card-header">
-                        <span>Name: ${p.name}</span>
-                        <span>${p.gender}</span>
-                        <span>Age: ${p.age}</span>
+                <div class="bg-white p-4 rounded-lg shadow-md transition hover:shadow-lg">
+                    <div class="flex justify-between mb-2 font-semibold text-lg">
+                        <span>${p.name}</span><span>${p.gender}, ${p.age}</span>
                     </div>
-                    <div class="card-body">
-                        <div class="card-left">
-                            <div class="avatar">
-                                <img src="${p.image}" alt="${p.name}" onerror="this.onerror=null;this.src='images/default-avatar.avif';">
-                            </div>
-                            <div class="last-updated"><em>Updated:<br>${formatTimestamp(p.lastUpdated)}</em></div>
+                    <div class="flex gap-4">
+                        <img src="${p.image}" alt="${p.name}" onerror="this.src='images/default-avatar.avif'" class="w-20 h-20 object-cover rounded-full border">
+                        <div class="text-sm space-y-1">
+                            <p><strong>ID:</strong> ${p.id}</p>
+                            <p><strong>HR:</strong> ${p.heartRate} bpm</p>
+                            <p><strong>BP:</strong> ${p.bloodPressure.systolic}/${p.bloodPressure.diastolic}</p>
+                            <p><strong>SpO₂:</strong> ${p.spo2}%</p>
+                            <p><strong>Temp:</strong> ${p.temperature.celsius}°C / ${p.temperature.fahrenheit}°F</p>
+                            <p><strong>Pulse:</strong> ${p.pulseRate} bpm</p>
+                            <p class="text-gray-500 text-xs mt-1">Updated: ${formatTimestamp(p.lastUpdated)}</p>
+                            <button class="edit-btn mt-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">Edit</button>
                         </div>
-                        <div class="card-right">
-                            <div class="patient-id">Patient ID: ${p.id}</div>
-                            <div class="info">
-                                <div class="info-label">
-                                    <p>Heart Rate</p><p>BP</p><p>SpO<sub>2</sub></p><p>Temp</p><p>Pulse Rate</p>
-                                </div>
-                                <div class="info-data">
-                                    <p>${p.heartRate} bpm</p>
-                                    <p>${p.bloodPressure.systolic}/${p.bloodPressure.diastolic} mmHg</p>
-                                    <p>${p.spo2}%</p>
-                                    <p>${p.temperature.celsius}°C / ${p.temperature.fahrenheit}°F</p>
-                                    <p>${p.pulseRate} bpm</p>
-                                </div>
-                            </div>
-                        </div>
-                        <button class="edit-btn">Edit</button>
                     </div>
                 </div>
             `;
@@ -181,18 +175,17 @@
 
         function createRow(p) {
             return `
-                <div class="row">
-                    <div>${p.name}</div>
-                    <div>${formatTimestamp(p.lastUpdated)}</div>
-                    <div>${p.age}</div>
-                    <div>${p.gender}</div>
-                    <div>${p.height || '-'}cm / ${p.weight || '-'}kg</div>
-                    <div>${p.bloodPressure.systolic}/${p.bloodPressure.diastolic}</div>
-                    <div>${p.pulseRate}</div>
-                    <div>${p.spo2}%</div>
-                    <div>${p.temperature.celsius}/${p.temperature.fahrenheit}</div>
-                    <div>Status</div>
-                    <div><button class="edit-btn">Edit</button></div>
+                <div class="grid grid-cols-10 gap-2 p-2 border-b text-sm items-center bg-white hover:bg-gray-100">
+                  <div>${p.name}</div>
+                  <div>${p.age}</div>
+                  <div>${p.gender}</div>
+                  <div>${p.heartRate}</div>
+                  <div>${p.pulseRate}</div>
+                  <div>${p.spo2}%</div>
+                  <div>${p.temperature.celsius}°C</div>
+                  <div>${p.temperature.fahrenheit}°F</div>
+                  <div>${p.bloodPressure.systolic}/${p.bloodPressure.diastolic}</div>
+                  <div><button class="edit-btn bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs">Edit</button></div>
                 </div>
             `;
         }
@@ -200,18 +193,16 @@
         function renderPatients() {
             if (currentView === 'list') {
                 const header = `
-                    <div class="row header">
-                        <div>Name</div><div>Last Updated</div><div>Age</div><div>Gender</div>
-                        <div>Height/Weight</div><div>NIBP(mmHg)</div><div>PR(bpm)</div>
-                        <div>SpO<sub>2</sub></div><div>Temp(°C/°F)</div><div>Status</div><div></div>
-                    </div>
+                  <div class="grid grid-cols-10 gap-2 p-2 font-bold border-b bg-gray-200">
+                    <div>Name</div><div>Age</div><div>Gender</div><div>HR</div><div>Pulse</div><div>SpO₂</div><div>Temp °C</div><div>Temp °F</div><div>BP</div><div>Action</div>
+                  </div>
                 `;
                 const rows = patientsData.map(createRow).join('');
+                gridContainer.className = 'space-y-2';
                 gridContainer.innerHTML = header + rows;
-                gridContainer.className = 'list-view';
             } else {
+                gridContainer.className = 'grid gap-4 md:grid-cols-2 lg:grid-cols-3';
                 gridContainer.innerHTML = patientsData.map(createCard).join('');
-                gridContainer.className = 'grid-view';
             }
 
             document.querySelectorAll('.edit-btn').forEach((btn, index) => {
@@ -225,22 +216,21 @@
                 .then(data => {
                     patientsData = data;
                     renderPatients();
-                });
+              });
         }
 
-        function showEditModal(patient) {
-            document.getElementById('editId').value = patient.id;
-            document.getElementById('editName').value = patient.name;
-            document.getElementById('editAge').value = patient.age;
-            document.getElementById('editGender').value = patient.gender;
-            document.getElementById('editPulse').value = patient.pulseRate;
-            document.getElementById('editSpO2').value = patient.spo2;
-            document.getElementById('editHeartRate').value = patient.heartRate;
-            document.getElementById('editTempC').value = patient.temperature.celsius;
-            document.getElementById('editTempF').value = patient.temperature.fahrenheit;
-            document.getElementById('editSys').value = patient.bloodPressure.systolic;
-            document.getElementById('editDia').value = patient.bloodPressure.diastolic;
-
+        function showEditModal(p) {
+            document.getElementById('editId').value = p.id;
+            document.getElementById('editName').value = p.name;
+            document.getElementById('editAge').value = p.age;
+            document.getElementById('editGender').value = p.gender;
+            document.getElementById('editPulse').value = p.pulseRate;
+            document.getElementById('editSpO2').value = p.spo2;
+            document.getElementById('editHeartRate').value = p.heartRate;
+            document.getElementById('editTempC').value = p.temperature.celsius;
+            document.getElementById('editTempF').value = p.temperature.fahrenheit;
+            document.getElementById('editSys').value = p.bloodPressure.systolic;
+            document.getElementById('editDia').value = p.bloodPressure.diastolic;
             document.getElementById('editModal').classList.remove('hidden');
         }
 
@@ -250,29 +240,26 @@
 
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-
             const id = document.getElementById('editId').value;
-            const patient = patientsData.find(p => p.id == id);
-            if (!patient) return;
+            const p = patientsData.find(p => p.id == id);
+            if (!p) return;
 
-            patient.name = document.getElementById('editName').value;
-            patient.age = parseInt(document.getElementById('editAge').value);
-            patient.gender = document.getElementById('editGender').value;
-            patient.pulseRate = parseInt(document.getElementById('editPulse').value);
-            patient.spo2 = parseInt(document.getElementById('editSpO2').value);
-            patient.heartRate = parseInt(document.getElementById('editHeartRate').value);
-            patient.temperature.celsius = parseFloat(document.getElementById('editTempC').value);
-            patient.temperature.fahrenheit = parseFloat(document.getElementById('editTempF').value);
-            patient.bloodPressure.systolic = parseInt(document.getElementById('editSys').value);
-            patient.bloodPressure.diastolic = parseInt(document.getElementById('editDia').value);
-            patient.lastUpdated = new Date().toISOString();
+            p.name = document.getElementById('editName').value;
+            p.age = parseInt(document.getElementById('editAge').value);
+            p.gender = document.getElementById('editGender').value;
+            p.pulseRate = parseInt(document.getElementById('editPulse').value);
+            p.spo2 = parseInt(document.getElementById('editSpO2').value);
+            p.heartRate = parseInt(document.getElementById('editHeartRate').value);
+            p.temperature.celsius = parseFloat(document.getElementById('editTempC').value);
+            p.temperature.fahrenheit = parseFloat(document.getElementById('editTempF').value);
+            p.bloodPressure.systolic = parseInt(document.getElementById('editSys').value);
+            p.bloodPressure.diastolic = parseInt(document.getElementById('editDia').value);
+            p.lastUpdated = new Date().toISOString();
 
             const response = await fetch(`/patients/${id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(patient)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(p)
             });
 
             if (response.ok) {
