@@ -155,23 +155,7 @@
 
         function formatTimestamp(iso) {
             const d = new Date(iso);
-            return `${d.toLocaleTimeString()} ${d.toLocaleDateString()}`;
-        }
-
-        function formatShortTimeAgo(timestamp) {
-            const now = new Date();
-            const updated = new Date(timestamp);
-            const diffSec = Math.floor((now - updated) / 1000);
-
-            if (diffSec < 60) return `${diffSec}s ago`;
-            const diffMin = Math.floor(diffSec / 60);
-            if (diffMin < 60) return `${diffMin}m ago`;
-            const diffHr = Math.floor(diffMin / 60);
-            if (diffHr < 24) return `${diffHr}h ago`;
-            const diffDay = Math.floor(diffHr / 24);
-            if (diffDay === 1) return `Yesterday`;
-            if (diffDay < 7) return `${diffDay}d ago`;
-            return updated.toLocaleDateString(); // fallback to full date
+            return `${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ${d.toLocaleDateString()}`;
         }
 
         function getColor(value, range) {
@@ -217,7 +201,7 @@
                         <span class="${getColor(p.bloodPressure.systolic, t.sys)}">${p.bloodPressure.systolic}</span> /
                         <span class="${getColor(p.bloodPressure.diastolic, t.dia)}">${p.bloodPressure.diastolic}</span>
                     </div>
-                    <div class="text-xs text-gray-500" title="${formatTimestamp(p.lastUpdated)}">${formatShortTimeAgo(p.lastUpdated)}</div>
+                    <div class="text-xs text-gray-500">${formatTimestamp(p.lastUpdated)}</div>
                     <div>
                         <button class="edit-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-xs">Edit</button>
                     </div>
@@ -250,8 +234,8 @@
                                 <span class="${getColor(p.temperature.fahrenheit, t.tempF)}">${p.temperature.fahrenheit}°F</span>
                             </p>
                             <p><strong>Pulse:</strong> <span class="${getColor(p.pulseRate, t.pulse)}">${p.pulseRate} bpm</span></p>
-                            <p class="text-gray-500 text-xs mt-1" title="${formatTimestamp(p.lastUpdated)}">Updated: ${formatShortTimeAgo(p.lastUpdated)}</p>
-                            <button class="edit-btn mt-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">Edit</button>
+                            <p class="text-gray-500 text-xs mt-1">Updated: ${formatTimestamp(p.lastUpdated)}</p>
+                            <button class="edit-btn mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">Edit</button>
                         </div>
                     </div>
                 </div>
