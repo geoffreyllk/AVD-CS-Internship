@@ -10,7 +10,7 @@
 <body class="bg-gray-100 text-gray-800 font-sans">
 
     <!-- Security Overlay -->
-    <div id="overlay" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+    <div id="overlay" class="fixed inset-0 flex items-center justify-center bg-black backdrop-blur-sm bg-opacity-80 z-50">
         <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
             <h2 class="text-xl font-semibold mb-4 text-center">Enter your hospital ID</h2>
             <form id="entry-form" class="space-y-4">
@@ -38,7 +38,8 @@
         </nav>
 
         <main class="p-4">
-            <div class="mb-4">
+            <div class="mb-4 flex justify-between">
+                <button id="viewLogsBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">View Logs</button>
                 <button id="toggleViewBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">Switch to List View</button>
             </div>
 
@@ -139,8 +140,15 @@
         let currentView = 'grid';
         let patientsData = [];
 
+        const savedView = localStorage.getItem('patientViewMode');
+        if (savedView === 'list' || savedView === 'grid') {
+            currentView = savedView;
+            toggleBtn.textContent = currentView === 'grid' ? 'Switch to List View' : 'Switch to Grid View';
+        }
+
         toggleBtn.addEventListener('click', () => {
             currentView = currentView === 'grid' ? 'list' : 'grid';
+            localStorage.setItem('patientViewMode', currentView);
             toggleBtn.textContent = currentView === 'grid' ? 'Switch to List View' : 'Switch to Grid View';
             renderPatients();
         });
@@ -150,42 +158,102 @@
             return `${d.toLocaleTimeString()} ${d.toLocaleDateString()}`;
         }
 
-        function createCard(p) {
+        function formatShortTimeAgo(timestamp) {
+            const now = new Date();
+            const updated = new Date(timestamp);
+            const diffSec = Math.floor((now - updated) / 1000);
+
+            if (diffSec < 60) return `${diffSec}s ago`;
+            const diffMin = Math.floor(diffSec / 60);
+            if (diffMin < 60) return `${diffMin}m ago`;
+            const diffHr = Math.floor(diffMin / 60);
+            if (diffHr < 24) return `${diffHr}h ago`;
+            const diffDay = Math.floor(diffHr / 24);
+            if (diffDay === 1) return `Yesterday`;
+            if (diffDay < 7) return `${diffDay}d ago`;
+            return updated.toLocaleDateString(); // fallback to full date
+        }
+
+        function getColor(value, range) {
+            if (value < range.warnLow) return 'text-yellow-500';
+            if (value > range.warnHigh && value <= range.high) return 'text-yellow-500';
+            if (value > range.high) return 'text-red-500';
+            return 'text-green-600';
+        }
+
+        function getHealthThresholds() {
+            return {
+                hr:    { warnLow: 60, warnHigh: 100, high: 120 },
+                pulse: { warnLow: 60, warnHigh: 100, high: 120 },
+                spo2:  { warnLow: 95, warnHigh: 100, high: 100 },
+                tempC: { warnLow: 36.5, warnHigh: 37.5, high: 39 },
+                tempF: { warnLow: 97.7, warnHigh: 99.5, high: 102.2 },
+                sys:   { warnLow: 90, warnHigh: 120, high: 140 },
+                dia:   { warnLow: 60, warnHigh: 80, high: 90 }
+            };
+        }
+
+        function getGenderClass(gender) {
+            return gender === 'Male' ? 'text-blue-600' : 'text-pink-600';
+        }
+
+        function createRow(p) {
+            const t = getHealthThresholds();
+            const genderClass = getGenderClass(p.gender);
+
             return `
-                <div class="bg-white p-4 rounded-lg shadow-md transition hover:shadow-lg">
-                    <div class="flex justify-between mb-2 font-semibold text-lg">
-                        <span>${p.name}</span><span>${p.gender}, ${p.age}</span>
+                <div class="group grid grid-cols-10 gap-2 p-2 border-b text-sm items-center bg-white hover:bg-gray-100">
+                    <div class="sticky left-0 bg-white group-hover:bg-gray-100 z-0 whitespace-nowrap overflow-hidden">${p.name}</div>
+                    <div>${p.age}</div>
+                    <div class="${genderClass}">${p.gender}</div>
+                    <div class="${getColor(p.heartRate, t.hr)}">${p.heartRate}</div>
+                    <div class="${getColor(p.pulseRate, t.pulse)}">${p.pulseRate}</div>
+                    <div class="${getColor(p.spo2, t.spo2)}">${p.spo2}%</div>
+                    <div>
+                        <span class="${getColor(p.temperature.celsius, t.tempC)}">${p.temperature.celsius}°C</span> /
+                        <span class="${getColor(p.temperature.fahrenheit, t.tempF)}">${p.temperature.fahrenheit}°F</span>
                     </div>
-                    <div class="flex gap-4">
-                        <img src="${p.image}" alt="${p.name}" onerror="this.src='images/default-avatar.avif'" class="w-20 h-20 object-cover rounded-full border">
-                        <div class="text-sm space-y-1">
-                            <p><strong>ID:</strong> ${p.id}</p>
-                            <p><strong>HR:</strong> ${p.heartRate} bpm</p>
-                            <p><strong>BP:</strong> ${p.bloodPressure.systolic}/${p.bloodPressure.diastolic}</p>
-                            <p><strong>SpO₂:</strong> ${p.spo2}%</p>
-                            <p><strong>Temp:</strong> ${p.temperature.celsius}°C / ${p.temperature.fahrenheit}°F</p>
-                            <p><strong>Pulse:</strong> ${p.pulseRate} bpm</p>
-                            <p class="text-gray-500 text-xs mt-1">Updated: ${formatTimestamp(p.lastUpdated)}</p>
-                            <button class="edit-btn mt-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">Edit</button>
-                        </div>
+                    <div>
+                        <span class="${getColor(p.bloodPressure.systolic, t.sys)}">${p.bloodPressure.systolic}</span> /
+                        <span class="${getColor(p.bloodPressure.diastolic, t.dia)}">${p.bloodPressure.diastolic}</span>
+                    </div>
+                    <div class="text-xs text-gray-500" title="${formatTimestamp(p.lastUpdated)}">${formatShortTimeAgo(p.lastUpdated)}</div>
+                    <div>
+                        <button class="edit-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-xs">Edit</button>
                     </div>
                 </div>
             `;
         }
 
-        function createRow(p) {
+        function createCard(p) {
+            const t = getHealthThresholds();
+            const genderClass = getGenderClass(p.gender);
+
             return `
-                <div class="grid grid-cols-10 gap-2 p-2 border-b text-sm items-center bg-white hover:bg-gray-100">
-                  <div>${p.name}</div>
-                  <div>${p.age}</div>
-                  <div>${p.gender}</div>
-                  <div>${p.heartRate}</div>
-                  <div>${p.pulseRate}</div>
-                  <div>${p.spo2}%</div>
-                  <div>${p.temperature.celsius}°C</div>
-                  <div>${p.temperature.fahrenheit}°F</div>
-                  <div>${p.bloodPressure.systolic}/${p.bloodPressure.diastolic}</div>
-                  <div><button class="edit-btn bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs">Edit</button></div>
+                <div class="bg-white p-4 rounded-lg shadow-md transition hover:shadow-lg">
+                    <div class="flex justify-between mb-2 font-semibold text-lg">
+                        <span>${p.name}</span>
+                        <span class="${genderClass}">${p.gender}, ${p.age}</span>
+                    </div>
+                    <div class="flex gap-4">
+                        <img src="${p.image}" alt="${p.name}" onerror="this.src='images/default-avatar.avif'" class="w-20 h-20 object-cover rounded-full border">
+                        <div class="text-sm space-y-1">
+                            <p><strong>ID:</strong> ${p.id}</p>
+                            <p><strong>HR:</strong> <span class="${getColor(p.heartRate, t.hr)}">${p.heartRate} bpm</span></p>
+                            <p><strong>BP:</strong>
+                                <span class="${getColor(p.bloodPressure.systolic, t.sys)}">${p.bloodPressure.systolic}</span> /
+                                <span class="${getColor(p.bloodPressure.diastolic, t.dia)}">${p.bloodPressure.diastolic}</span>
+                            </p>
+                            <p><strong>SpO₂:</strong> <span class="${getColor(p.spo2, t.spo2)}">${p.spo2}%</span></p>
+                            <p><strong>Temp:</strong>
+                                <span class="${getColor(p.temperature.celsius, t.tempC)}">${p.temperature.celsius}°C</span> /
+                                <span class="${getColor(p.temperature.fahrenheit, t.tempF)}">${p.temperature.fahrenheit}°F</span>
+                            </p>
+                            <p><strong>Pulse:</strong> <span class="${getColor(p.pulseRate, t.pulse)}">${p.pulseRate} bpm</span></p>
+                            <p class="text-gray-500 text-xs mt-1" title="${formatTimestamp(p.lastUpdated)}">Updated: ${formatShortTimeAgo(p.lastUpdated)}</p>
+                            <button class="edit-btn mt-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">Edit</button>
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -194,12 +262,14 @@
             if (currentView === 'list') {
                 const header = `
                   <div class="grid grid-cols-10 gap-2 p-2 font-bold border-b bg-gray-200">
-                    <div>Name</div><div>Age</div><div>Gender</div><div>HR</div><div>Pulse</div><div>SpO₂</div><div>Temp °C</div><div>Temp °F</div><div>BP</div><div>Action</div>
+                    <div class="sticky left-0 bg-gray-200 z-10">Name</div>
+                    <div>Age</div><div>Gender</div><div>HR</div><div>Pulse</div><div>SpO₂</div>
+                    <div>Temp</div><div>BP</div><div>Updated</div><div>Action</div>
                   </div>
                 `;
                 const rows = patientsData.map(createRow).join('');
-                gridContainer.className = 'space-y-2';
-                gridContainer.innerHTML = header + rows;
+                gridContainer.className = 'overflow-x-auto';
+                gridContainer.innerHTML = `<div class="min-w-[900px]">${header + rows}</div>`;
             } else {
                 gridContainer.className = 'grid gap-4 md:grid-cols-2 lg:grid-cols-3';
                 gridContainer.innerHTML = patientsData.map(createCard).join('');
