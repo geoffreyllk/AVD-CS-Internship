@@ -37,7 +37,57 @@ app.put('/patients/:id', (req, res) => {
   });
 });
 
+// === MySQL Setup ===
+const mysql = require('mysql2');
+
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'avdex2025',
+  database: 'hospital_db'
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error('❌ MySQL connection failed:', err.message);
+    return;
+  }
+  console.log('✅ Connected to MySQL');
+});
+
+// === GET all patients from MySQL ===
+app.get('/mysql/patients', (req, res) => {
+  db.query('SELECT * FROM patients', (err, results) => {
+    if (err) return res.status(500).send('❌ Error querying database');
+    res.json(results);
+  });
+});
+
+// === PUT (update) patient by ID in MySQL ===
+app.put('/mysql/patients/:id', (req, res) => {
+  const id = req.params.id;
+  const { name, age, diagnosis } = req.body;
+
+  db.query(
+    'UPDATE patients SET name = ?, age = ?, diagnosis = ? WHERE id = ?',
+    [name, age, diagnosis, id],
+    (err, result) => {
+      if (err) return res.status(500).send('❌ Error updating patient');
+      if (result.affectedRows === 0) return res.status(404).send('Patient not found');
+      res.send({ success: true, updated: result.affectedRows });
+    }
+  );
+});
+
+// === MySQL Route to Get Hospital Users ===
+app.get('/api/hospital-users', (req, res) => {
+  db.query('SELECT hospital_id, access_level FROM hospital_users', (err, results) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch hospital users' });
+    res.json(results);
+  });
+});
+
 const PORT = 3333;
 app.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
+  console.log('✅ Server running at http://localhost:${PORT}');
 });

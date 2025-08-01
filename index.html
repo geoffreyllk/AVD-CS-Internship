@@ -95,37 +95,74 @@
     </div>
 
     <script>
-        // Authentication (unchanged)
-        let validIDs = [];
+        let hospitalUsers = [];
+
         window.onload = function () {
-            fetch('hospital_id.json')
+            // Fetch hospital user data from backend
+            fetch('/api/hospital-users')
                 .then(res => res.json())
                 .then(data => {
-                    validIDs = data.validHospitalIDs || [];
-                    if (sessionStorage.getItem("authenticated") === "true") {
+                    hospitalUsers = data;
+
+                    const isAuthenticated = sessionStorage.getItem("authenticated");
+                    const role = sessionStorage.getItem("access_level");
+
+                    if (isAuthenticated === "true" && role) {
                         document.getElementById("overlay").style.display = "none";
+                        handleRoleBasedUI(role);
                     }
                 })
                 .catch(err => {
-                    console.error("Error loading hospital_id.json:", err);
+                    console.error("Error loading hospital users:", err);
                     document.getElementById("error-msg").textContent = "⚠ Failed to load hospital IDs.";
                 });
         };
 
         document.getElementById("entry-form").addEventListener("submit", function (e) {
             e.preventDefault();
+
             const input = document.getElementById("code-input").value.trim().toUpperCase();
-            if (validIDs.map(id => id.toUpperCase()).includes(input)) {
+
+            // Match entered ID against list
+            const matchedUser = hospitalUsers.find(user => user.hospital_id.toUpperCase() === input);
+
+            if (matchedUser) {
                 sessionStorage.setItem("authenticated", "true");
+                sessionStorage.setItem("access_level", matchedUser.access_level);
+
                 document.getElementById("overlay").style.display = "none";
+
+                handleRoleBasedUI(matchedUser.access_level);
             } else {
                 document.getElementById("error-msg").textContent = "❌ Invalid hospital ID. Try again.";
                 document.getElementById("code-input").value = "";
             }
         });
+
+        // Handle role-specific logic
+        function handleRoleBasedUI(role) {
+            console.log(`Access Level: ${role}`);
+
+            if (role === "admin") {
+                document.body.classList.add("admin");
+                // Show admin-only sections
+
+                const adminSections = document.querySelectorAll('.admin-only');
+                adminSections.forEach(el => el.style.display = 'block');
+            } else if (role === "employee") {
+                document.body.classList.add("employee");
+                // Show employee-only sections
+
+                const employeeSections = document.querySelectorAll('.employee-only');
+                employeeSections.forEach(el => el.style.display = 'block');
+            }
+        }
+
+        // Toggle password visibility
         function toggleVisibility() {
             const input = document.getElementById("code-input");
             const icon = document.getElementById("toggle-visibility");
+
             if (input.type === "password") {
                 input.type = "text";
                 icon.textContent = "visibility_off";
