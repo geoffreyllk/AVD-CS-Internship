@@ -2,40 +2,38 @@
   {
     "id": "P001",
     "name": "John Doe",
-    "gender": "Male",
     "age": 54,
-    "image": "images/john.jpg",
-    "heartRate": 74,
+    "gender": "Male",
+    "heartRate": 100,
+    "pulseRate": 62,
+    "spo2": 98,
+    "temperature": {
+      "celsius": 32.5,
+      "fahrenheit": 97.3
+    },
     "bloodPressure": {
       "systolic": 117,
       "diastolic": 79
     },
-    "spo2": 98,
-    "temperature": {
-      "celsius": 36.3,
-      "fahrenheit": 97.3
-    },
-    "pulseRate": 74,
-    "lastUpdated": "2025-07-12T05:23:30.841Z"
+    "lastUpdated": "2025-08-01T10:19:40.546Z"
   },
   {
     "id": "P002",
     "name": "Amira Yusof",
-    "gender": "Female",
     "age": 43,
-    "image": "images/amira.jpg",
-    "heartRate": 82,
+    "gender": "Female",
+    "heartRate": 70,
+    "pulseRate": 80,
+    "spo2": 94,
+    "temperature": {
+      "celsius": 37.5,
+      "fahrenheit": 98.8
+    },
     "bloodPressure": {
       "systolic": 124,
       "diastolic": 84
     },
-    "spo2": 97,
-    "temperature": {
-      "celsius": 37.1,
-      "fahrenheit": 98.8
-    },
-    "pulseRate": 81,
-    "lastUpdated": "2025-07-10T15:10:00"
+    "lastUpdated": "2025-08-01T07:39:55.579Z"
   },
   {
     "id": "P003",

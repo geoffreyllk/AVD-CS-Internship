@@ -33,13 +33,14 @@
 
         <nav class="bg-blue-600 text-white px-4 py-2 shadow">
             <ul class="flex space-x-4">
-                <li class="hover:underline cursor-pointer">Home</li>
+                <li><a href="index.html" class="hover:underline">Home</a></li>
+                <li><a href="logs.html" class="hover:underline">Logs</a></li>
             </ul>
         </nav>
 
+
         <main class="p-4">
             <div class="mb-4 flex justify-between">
-                <button id="viewLogsBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">View Logs</button>
                 <button id="toggleViewBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">Switch to List View</button>
             </div>
 
@@ -56,31 +57,31 @@
                             Name:<input type="text" id="editName" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
                         </label>
                         <label class="flex flex-col text-sm font-medium">
-                            Age:<input type="number" id="editAge" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                            Age:<input type="number" min="0" step="1" id="editAge" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
                         </label>
                         <label class="flex flex-col text-sm font-medium">
                             Gender:<input type="text" id="editGender" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
                         </label>
                         <label class="flex flex-col text-sm font-medium">
-                            Pulse Rate:<input type="number" id="editPulse" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                            Pulse Rate:<input type="number" min="0" step="1" id="editPulse" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
                         </label>
                         <label class="flex flex-col text-sm font-medium">
-                            SpO₂:<input type="number" id="editSpO2" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                            SpO₂:<input type="number" min="0" step="1" id="editSpO2" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
                         </label>
                         <label class="flex flex-col text-sm font-medium">
-                            Heart Rate:<input type="number" id="editHeartRate" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                            Heart Rate:<input type="number" min="0" step="1" id="editHeartRate" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
                         </label>
                         <label class="flex flex-col text-sm font-medium">
-                            Temp (°C):<input type="number" step="0.1" id="editTempC" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                            Temp (°C):<input type="number" min="0" step="0.1" id="editTempC" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
                         </label>
                         <label class="flex flex-col text-sm font-medium">
-                            Temp (°F):<input type="number" step="0.1" id="editTempF" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                            Temp (°F):<input type="number" min="0" step="0.1" id="editTempF" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
                         </label>
                         <label class="flex flex-col text-sm font-medium">
-                            Systolic:<input type="number" id="editSys" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                            Systolic:<input type="number" min="0" step="1" id="editSys" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
                         </label>
                         <label class="flex flex-col text-sm font-medium">
-                            Diastolic:<input type="number" id="editDia" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                            Diastolic:<input type="number" min="0" step="1" id="editDia" class="mt-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
                         </label>
 
                         <div class="col-span-2 flex justify-end pt-3 space-x-3">
@@ -153,27 +154,101 @@
             renderPatients();
         });
 
+        // [ validation helpers ]
+        function validateNumber(raw) {
+            const n = parseFloat(raw);
+            if (isNaN(n) || n < 0 || n > 1000) return null;
+            // round to 2 decimal places
+            return Math.round(n * 100) / 100;
+        }
+
+        function validateGender(raw) {
+            const g = String(raw).trim().toLowerCase();
+            if (g === 'male')   return 'Male';
+            if (g === 'female') return 'Female';
+            return 'Unspecified';
+        }
+
+        function validatePatient(p) {
+            return {
+                id:        String(p.id || '').slice(0, 20),
+                name:      String(p.name || '').slice(0, 50),
+                age:       validateNumber(p.age),
+                gender:    validateGender(p.gender),
+                heartRate: validateNumber(p.heartRate),
+                pulseRate: validateNumber(p.pulseRate),
+                spo2:      validateNumber(p.spo2),
+                temperature: {
+                    celsius:    validateNumber(p.temperature?.celsius),
+                    fahrenheit: validateNumber(p.temperature?.fahrenheit),
+                },
+                bloodPressure: {
+                    systolic:  validateNumber(p.bloodPressure?.systolic),
+                    diastolic: validateNumber(p.bloodPressure?.diastolic),
+                },
+                lastUpdated:
+                    (typeof p.lastUpdated === 'string' && !isNaN(Date.parse(p.lastUpdated)))
+                        ? p.lastUpdated
+                        : new Date().toISOString()
+            };
+        }
+
+        // [ create Row and Grid functions ]
         function formatTimestamp(iso) {
             const d = new Date(iso);
-            return `${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ${d.toLocaleDateString()}`;
+            const time = d.toLocaleTimeString([], {
+                hour:   '2-digit',
+                minute: '2-digit'
+            });
+            const date = d.toLocaleDateString([], {
+                month: 'numeric',
+                day:   'numeric',
+                year:  '2-digit'
+            });
+            return `${time} ${date}`;
         }
 
         function getColor(value, range) {
-            if (value < range.warnLow) return 'text-yellow-500';
-            if (value > range.warnHigh && value <= range.high) return 'text-yellow-500';
-            if (value > range.high) return 'text-red-500';
+            if (isNaN(value) || value < range.errorLow || value > range.errorHigh) {
+                return 'text-gray-500';
+            }
+            if (value < range.criticalLow || value > range.criticalHigh) {
+                return 'text-red-600';
+            }
+            if (value < range.warnLow || value > range.warnHigh) {
+                return 'text-yellow-500';
+            }
             return 'text-green-600';
         }
 
+        function renderWithWarning(value, cls) {
+            return `
+                <span class="${cls}">
+                    ${value}
+                    ${cls === 'text-gray-500' ? '<span title="⚠️ Possible sensor/read error">⚠️</span>' : ''}
+                </span>
+            `;
+        }
+
+        function displayNumeric(val, unit, range) {
+            // if val is not a valid number, show dash
+            if (val === null || isNaN(val)) {
+                return renderWithWarning('–', 'text-gray-500');
+            }
+            const cls = getColor(val, range);
+            return renderWithWarning(`${val}${unit}`, cls);
+        }
+
+        // Health parameter thresholds
         function getHealthThresholds() {
             return {
-                hr:    { warnLow: 60, warnHigh: 100, high: 120 },
-                pulse: { warnLow: 60, warnHigh: 100, high: 120 },
-                spo2:  { warnLow: 95, warnHigh: 100, high: 100 },
-                tempC: { warnLow: 36.5, warnHigh: 37.5, high: 39 },
-                tempF: { warnLow: 97.7, warnHigh: 99.5, high: 102.2 },
-                sys:   { warnLow: 90, warnHigh: 120, high: 140 },
-                dia:   { warnLow: 60, warnHigh: 80, high: 90 }
+                hr:    { errorLow: 30, warnLow: 60, warnHigh: 100, criticalLow: 50, criticalHigh: 120, errorHigh: 220 },
+                pulse: { errorLow: 30, warnLow: 60, warnHigh: 100, criticalLow: 50, criticalHigh: 120, errorHigh: 220 },
+                spo2:  { errorLow: 50, warnLow: 95, warnHigh: 100, criticalLow: 90, criticalHigh: 100, errorHigh: 100 },
+                tempC: { errorLow: 30, warnLow: 36.5, warnHigh: 37.5, criticalLow: 35.0, criticalHigh: 40.0, errorHigh: 45.0 },
+                tempF: { errorLow: 86, warnLow: 97.7, warnHigh: 99.5, criticalLow: 95.0, criticalHigh: 104.0, errorHigh: 113.0 },
+                sys:   { errorLow: 50, warnLow: 90, warnHigh: 120, criticalLow: 70, criticalHigh: 180, errorHigh: 250 },
+                dia:   { errorLow: 30, warnLow: 60, warnHigh: 80, criticalLow: 40, criticalHigh: 120, errorHigh: 150 },
             };
         }
 
@@ -183,27 +258,33 @@
 
         function createRow(p) {
             const t = getHealthThresholds();
-            const genderClass = getGenderClass(p.gender);
+            const gCls = getGenderClass(p.gender);
 
             return `
                 <div class="group grid grid-cols-10 gap-2 p-2 border-b text-sm items-center bg-white hover:bg-gray-100">
-                    <div class="sticky left-0 bg-white group-hover:bg-gray-100 z-0 whitespace-nowrap overflow-hidden">${p.name}</div>
-                    <div>${p.age}</div>
-                    <div class="${genderClass}">${p.gender}</div>
-                    <div class="${getColor(p.heartRate, t.hr)}">${p.heartRate}</div>
-                    <div class="${getColor(p.pulseRate, t.pulse)}">${p.pulseRate}</div>
-                    <div class="${getColor(p.spo2, t.spo2)}">${p.spo2}%</div>
+                    <div class="sticky left-0 bg-white z-10">${p.name}</div>
+                    <div>${p.age === null
+                            ? renderWithWarning('–', 'text-gray-500')
+                            : p.age}</div>
+                    <div class="${gCls}">${p.gender}</div>
+                    <div>${displayNumeric(p.heartRate, ' bpm', t.hr)}</div>
+                    <div>${displayNumeric(p.pulseRate, ' bpm', t.pulse)}</div>
+                    <div>${displayNumeric(p.spo2, '%', t.spo2)}</div>
                     <div>
-                        <span class="${getColor(p.temperature.celsius, t.tempC)}">${p.temperature.celsius}°C</span> /
-                        <span class="${getColor(p.temperature.fahrenheit, t.tempF)}">${p.temperature.fahrenheit}°F</span>
+                        ${displayNumeric(p.temperature.celsius, '°C', t.tempC)}
+                        /
+                        ${displayNumeric(p.temperature.fahrenheit, '°F', t.tempF)}
                     </div>
                     <div>
-                        <span class="${getColor(p.bloodPressure.systolic, t.sys)}">${p.bloodPressure.systolic}</span> /
-                        <span class="${getColor(p.bloodPressure.diastolic, t.dia)}">${p.bloodPressure.diastolic}</span>
+                        ${displayNumeric(p.bloodPressure.systolic, '', t.sys)}
+                        /
+                        ${displayNumeric(p.bloodPressure.diastolic, ' mmHg', t.dia)}
                     </div>
                     <div class="text-xs text-gray-500">${formatTimestamp(p.lastUpdated)}</div>
                     <div>
-                        <button class="edit-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-xs">Edit</button>
+                        <button class="edit-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-xs">
+                            Edit
+                        </button>
                     </div>
                 </div>
             `;
@@ -211,31 +292,38 @@
 
         function createCard(p) {
             const t = getHealthThresholds();
-            const genderClass = getGenderClass(p.gender);
+            const gCls = getGenderClass(p.gender);
 
             return `
                 <div class="bg-white p-4 rounded-lg shadow-md transition hover:shadow-lg">
                     <div class="flex justify-between mb-2 font-semibold text-lg">
                         <span>${p.name}</span>
-                        <span class="${genderClass}">${p.gender}, ${p.age}</span>
+                        <span class="${gCls}">${p.gender}, ${p.age === null ? '–' : p.age}</span>
                     </div>
                     <div class="flex gap-4">
-                        <img src="${p.image}" alt="${p.name}" onerror="this.src='images/default-avatar.avif'" class="w-20 h-20 object-cover rounded-full border">
+                        <img src="${p.image}" alt="${p.name}" onerror="this.src='images/default-avatar.avif'"
+                             class="w-20 h-20 object-cover rounded-full border">
                         <div class="text-sm space-y-1">
                             <p><strong>ID:</strong> ${p.id}</p>
-                            <p><strong>HR:</strong> <span class="${getColor(p.heartRate, t.hr)}">${p.heartRate} bpm</span></p>
-                            <p><strong>BP:</strong>
-                                <span class="${getColor(p.bloodPressure.systolic, t.sys)}">${p.bloodPressure.systolic}</span> /
-                                <span class="${getColor(p.bloodPressure.diastolic, t.dia)}">${p.bloodPressure.diastolic}</span>
-                            </p>
-                            <p><strong>SpO₂:</strong> <span class="${getColor(p.spo2, t.spo2)}">${p.spo2}%</span></p>
+                            <p><strong>HR:</strong> ${displayNumeric(p.heartRate, ' bpm', t.hr)}</p>
+                            <p><strong>Pulse:</strong> ${displayNumeric(p.pulseRate, ' bpm', t.pulse)}</p>
+                            <p><strong>SpO₂:</strong> ${displayNumeric(p.spo2, '%', t.spo2)}</p>
                             <p><strong>Temp:</strong>
-                                <span class="${getColor(p.temperature.celsius, t.tempC)}">${p.temperature.celsius}°C</span> /
-                                <span class="${getColor(p.temperature.fahrenheit, t.tempF)}">${p.temperature.fahrenheit}°F</span>
+                                ${displayNumeric(p.temperature.celsius, '°C', t.tempC)}
+                                /
+                                ${displayNumeric(p.temperature.fahrenheit, '°F', t.tempF)}
                             </p>
-                            <p><strong>Pulse:</strong> <span class="${getColor(p.pulseRate, t.pulse)}">${p.pulseRate} bpm</span></p>
-                            <p class="text-gray-500 text-xs mt-1">Updated: ${formatTimestamp(p.lastUpdated)}</p>
-                            <button class="edit-btn mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">Edit</button>
+                            <p><strong>BP:</strong>
+                                ${displayNumeric(p.bloodPressure.systolic, '', t.sys)}
+                                /
+                                ${displayNumeric(p.bloodPressure.diastolic, ' mmHg', t.dia)}
+                            </p>
+                            <p class="text-gray-500 text-xs mt-1">
+                                Updated: ${formatTimestamp(p.lastUpdated)}
+                            </p>
+                            <button class="edit-btn mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">
+                                Edit
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -245,11 +333,18 @@
         function renderPatients() {
             if (currentView === 'list') {
                 const header = `
-                  <div class="grid grid-cols-10 gap-2 p-2 font-bold border-b bg-gray-200">
-                    <div class="sticky left-0 bg-gray-200 z-10">Name</div>
-                    <div>Age</div><div>Gender</div><div>HR</div><div>Pulse</div><div>SpO₂</div>
-                    <div>Temp</div><div>BP</div><div>Updated</div><div>Action</div>
-                  </div>
+                    <div class="grid grid-cols-10 gap-2 p-2 font-bold border-b bg-gray-200">
+                        <div class="sticky left-0 bg-gray-200 z-10">Name</div>
+                        <div>Age</div>
+                        <div>Gender</div>
+                        <div>HR</div>
+                        <div>Pulse</div>
+                        <div>SpO₂</div>
+                        <div>Temp</div>
+                        <div>BP (mmHg)</div>
+                        <div>Updated</div>
+                        <div>Action</div>
+                    </div>
                 `;
                 const rows = patientsData.map(createRow).join('');
                 gridContainer.className = 'overflow-x-auto';
@@ -268,7 +363,7 @@
             fetch('patients.json')
                 .then(res => res.json())
                 .then(data => {
-                    patientsData = data;
+                    patientsData = data.map(validatePatient);
                     renderPatients();
               });
         }
@@ -294,34 +389,48 @@
 
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const id = document.getElementById('editId').value;
-            const p = patientsData.find(p => p.id == id);
-            if (!p) return;
 
-            p.name = document.getElementById('editName').value;
-            p.age = parseInt(document.getElementById('editAge').value);
-            p.gender = document.getElementById('editGender').value;
-            p.pulseRate = parseInt(document.getElementById('editPulse').value);
-            p.spo2 = parseInt(document.getElementById('editSpO2').value);
-            p.heartRate = parseInt(document.getElementById('editHeartRate').value);
-            p.temperature.celsius = parseFloat(document.getElementById('editTempC').value);
-            p.temperature.fahrenheit = parseFloat(document.getElementById('editTempF').value);
-            p.bloodPressure.systolic = parseInt(document.getElementById('editSys').value);
-            p.bloodPressure.diastolic = parseInt(document.getElementById('editDia').value);
-            p.lastUpdated = new Date().toISOString();
+            const raw = {
+                id:        document.getElementById('editId').value,
+                name:      document.getElementById('editName').value,
+                age:       document.getElementById('editAge').value,
+                gender:    document.getElementById('editGender').value,
+                heartRate: document.getElementById('editHeartRate').value,
+                pulseRate: document.getElementById('editPulse').value,
+                spo2:      document.getElementById('editSpO2').value,
+                temperature: {
+                    celsius:    document.getElementById('editTempC').value,
+                    fahrenheit: document.getElementById('editTempF').value,
+                },
+                bloodPressure: {
+                    systolic:  document.getElementById('editSys').value,
+                    diastolic: document.getElementById('editDia').value,
+                },
+                lastUpdated: new Date().toISOString()
+            };
 
-            const response = await fetch(`/patients/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(p)
-            });
-
-            if (response.ok) {
-                document.getElementById('editModal').classList.add('hidden');
-                renderPatients();
-            } else {
-                alert("Failed to save changes.");
+            const clean = validatePatient(raw);
+            const idx   = patientsData.findIndex(p => p.id === clean.id);
+            if (idx === -1) {
+                alert("Unable to locate patient record.");
+                return;
             }
+
+            try {
+                const resp = await fetch(`/patients/${clean.id}`, {
+                    method:  'PUT',
+                    headers: { 'Content-Type':'application/json' },
+                    body:    JSON.stringify(clean)
+                });
+                if (!resp.ok) throw new Error("Server rejected update");
+            } catch (err) {
+                console.warn("Remote save failed:", err);
+                alert("Saved locally, but failed to update server.");
+            }
+
+            patientsData[idx] = clean;
+            document.getElementById('editModal').classList.add('hidden');
+            renderPatients();
         });
 
         document.addEventListener('DOMContentLoaded', loadPatients);
