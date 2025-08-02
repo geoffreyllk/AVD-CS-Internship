@@ -4,236 +4,350 @@
     <meta charset="UTF-8" />
     <title>Patient Edit Logs</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <header class="bg-blue-700 text-white p-4 flex justify-between items-center shadow">
+        <h1 class="text-2xl font-bold">Patient Records</h1>
+        <img src="images/logo-placeholder.jpg" alt="Logo" class="h-10 w-auto">
+    </header>
 
-<header class="bg-blue-700 text-white p-4 flex justify-between items-center shadow">
-    <h1 class="text-2xl font-bold">Patient Records</h1>
-    <img src="images/logo-placeholder.jpg" alt="Logo" class="h-10 w-auto">
-</header>
+    <nav class="bg-blue-600 text-white px-4 py-3 shadow">
+        <ul class="flex space-x-4">
+            <li><a href="index.html" class="hover:underline">Home</a></li>
+            <li><a href="logs.html" class="hover:underline">Logs</a></li>
+        </ul>
+    </nav>
 
-<nav class="bg-blue-600 text-white px-4 py-3 shadow">
-    <ul class="flex space-x-4">
-        <li><a href="index.html" class="hover:underline">Home</a></li>
-        <li><a href="logs.html" class="hover:underline">Logs</a></li>
-    </ul>
-</nav>
-
-<div class="max-w-7xl mx-auto mt-6 p-4 bg-white shadow rounded">
-    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-        <div class="flex items-center gap-3 w-full md:w-2/3">
-            <h1 class="text-xl font-semibold whitespace-nowrap">Edit Logs</h1>
-            <div class="relative w-full max-w-xs">
-                <input id="searchInput" type="text" placeholder="Search User or Patient..."
-                       class="w-full border border-gray-300 rounded px-3 py-2 pr-8 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                <button id="clearSearch"
-                        class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 hidden text-lg">
-                    &times;
-                </button>
-                <ul id="suggestions"
-                    class="absolute w-full bg-white border rounded shadow mt-1 z-10 hidden max-h-40 overflow-y-auto text-sm">
-                </ul>
-            </div>
-        </div>
-        <select id="sortSelect"
-                class="border border-gray-300 rounded px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full md:w-auto">
-            <option value="recent">Most Recent</option>
-            <option value="oldest">Oldest First</option>
-            <option value="user-asc">User Name A–Z</option>
-            <option value="user-desc">User Name Z–A</option>
-            <option value="patient-asc">Patient Name A–Z</option>
-            <option value="patient-desc">Patient Name Z–A</option>
-            <option value="edits-desc">Most Edits</option>
-            <option value="edits-asc">Fewest Edits</option>
-        </select>
-    </div>
-
-    <div class="overflow-x-auto">
-        <div class="grid grid-cols-6 font-bold bg-gray-100 p-3 border-b items-center">
-            <div>User Name</div>
-            <div>User ID</div>
-            <div>Patient Name</div>
-            <div>Date</div>
-            <div>Time</div>
-            <div>Changes</div>
-        </div>
-        <div id="logsContainer"></div>
-    </div>
-</div>
-
-<script>
-    const logs = [
-        {
-            userName: "John Doe",
-            userId: "U001",
-            patientName: "Jane Smith",
-            date: "8/1/25",
-            time: "14:30",
-            edits: [
-                { field: "SpO₂", from: "99%", to: "98%" },
-                { field: "Temp", from: "37.0°C", to: "37.5°C" },
-            ]
-        },
-        {
-            userName: "Anna Lim",
-            userId: "U002",
-            patientName: "Michael Tan",
-            date: "8/1/25",
-            time: "10:15",
-            edits: [{ field: "Pulse", from: "72", to: "74" }]
-        },
-        {
-            userName: "Carl Wong",
-            userId: "U003",
-            patientName: "Lisa Ng",
-            date: "8/1/25",
-            time: "16:00",
-            edits: [
-                { field: "BP", from: "120/80", to: "125/85" },
-                { field: "HR", from: "80", to: "82" }
-            ]
-        }
-    ];
-
-    let currentLogs = [...logs];
-
-    const parseDateTime = log => {
-        const [month, day, year] = log.date.split('/');
-        return new Date(`20${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${log.time}`);
-    };
-
-    const sortLogs = (type) => {
-        currentLogs.sort((a, b) => {
-            switch (type) {
-                case "recent": return parseDateTime(b) - parseDateTime(a);
-                case "oldest": return parseDateTime(a) - parseDateTime(b);
-                case "user-asc": return a.userName.localeCompare(b.userName);
-                case "user-desc": return b.userName.localeCompare(a.userName);
-                case "patient-asc": return a.patientName.localeCompare(b.patientName);
-                case "patient-desc": return b.patientName.localeCompare(a.patientName);
-                case "edits-asc": return a.edits.length - b.edits.length;
-                case "edits-desc": return b.edits.length - a.edits.length;
-            }
-        });
-    };
-
-    const renderLogs = () => {
-        const container = document.getElementById("logsContainer");
-        container.innerHTML = "";
-
-        currentLogs.forEach(log => {
-            const row = document.createElement("div");
-            row.className = "grid grid-cols-6 items-center bg-white hover:bg-gray-50 cursor-pointer border-b p-3";
-            row.innerHTML = `
-                <div>${log.userName}</div>
-                <div>${log.userId}</div>
-                <div>${log.patientName}</div>
-                <div>${log.date}</div>
-                <div>${log.time}</div>
-                <div>${log.edits.length}</div>
-            `;
-
-            const detailRow = document.createElement("div");
-            detailRow.className = "col-span-6 bg-gray-50 px-6 py-4 text-sm hidden";
-            detailRow.innerHTML = `
-                <div class="flex flex-wrap gap-3">
-                    ${log.edits.map(edit => `
-                        <div class="bg-white border border-gray-300 rounded-lg px-4 py-2 shadow-sm">
-                            <span class="font-medium">${edit.field}:</span>
-                            <span class="text-gray-500">${edit.from}</span>
-                            <span class="mx-1">→</span>
-                            <span class="text-green-600 font-medium">${edit.to}</span>
-                        </div>
-                    `).join("")}
+    <main class="">
+        <div class="max-w-7xl mx-auto mt-6 p-4 bg-white shadow rounded">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                <div class="flex items-center gap-4 w-full md:w-2/3">
+                    <h2 class="text-lg font-semibold uppercase">Log of Events</h2>
+                    <div class="relative w-full max-w-xs">
+                        <input id="searchInput"
+                               type="text"
+                               placeholder="Search User or Patient…"
+                               class="w-full border border-gray-300 rounded px-3 py-2 pr-8 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                        <button id="clearSearch"
+                                class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 hidden text-lg">
+                            &times;
+                        </button>
+                        <ul id="suggestions"
+                            class="absolute w-full bg-white border rounded shadow mt-1 z-10 hidden max-h-40 overflow-y-auto text-sm">
+                        </ul>
+                    </div>
                 </div>
-            `;
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <select id="sortSelect"
+                            class="border border-gray-300 rounded px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="recent">Most Recent</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="user-asc">User Name A–Z</option>
+                        <option value="user-desc">User Name Z–A</option>
+                        <option value="patient-asc">Patient Name A–Z</option>
+                        <option value="patient-desc">Patient Name Z–A</option>
+                        <option value="edits-desc">Most Edits</option>
+                        <option value="edits-asc">Fewest Edits</option>
+                    </select>
+                    <select id="dateFilter"
+                            class="border border-gray-300 rounded px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="all">All</option>
+                        <option value="7">Last 7 Days</option>
+                        <option value="14">Last 14 Days</option>
+                        <option value="30">Last Month</option>
+                        <option value="1825">Last 5 Years</option>
+                        <option value="3650">Last 10 Years</option>
+                    </select>
+                </div>
+            </div>
 
-            row.addEventListener("click", () => {
-                detailRow.classList.toggle("hidden");
+            <!-- Table Header -->
+            <div class="overflow-x-auto">
+                <div class="grid grid-cols-6 font-bold bg-gray-100 p-3 border-b items-center">
+                    <div class="text-sm">User Name</div>
+                    <div class="text-sm">User ID</div>
+                    <div class="text-sm">Patient Name</div>
+                    <div class="text-sm">Date</div>
+                    <div class="text-sm">Time</div>
+                    <div class="text-sm">Changes</div>
+                </div>
+                <div id="logsContainer"></div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="mt-4 flex flex-wrap justify-center items-center gap-2 text-sm"></div>
+        </div>
+    </main>
+
+    <footer class="text-center text-white text-xs sm:text-sm py-6 px-12 mt-8 bg-blue-700">
+        <p>Patient Records Footer Placeholder @2025</p>
+    </footer>
+
+    <script>
+        // --- Sample log data (could come from server) ---
+        const logs = [
+            { userName:"John Doe", userId:"U001", patientName:"Jane Smith", date:"8/1/25", time:"14:30", edits:[
+                {field:"SpO₂", from:"99%", to:"98%"},{field:"Temp",from:"37.0°C",to:"37.5°C"}
+            ]},{ userName:"John Doe", userId:"U001", patientName:"Jane Smith", date:"8/1/25", time:"14:30", edits:[
+                {field:"SpO₂", from:"99%", to:"98%"},{field:"Temp",from:"37.0°C",to:"37.5°C"}
+            ]},{ userName:"John Doe", userId:"U001", patientName:"Jane Smith", date:"8/1/25", time:"14:30", edits:[
+                {field:"SpO₂", from:"99%", to:"98%"},{field:"Temp",from:"37.0°C",to:"37.5°C"}
+            ]},{ userName:"John Doe", userId:"U001", patientName:"Jane Smith", date:"8/1/25", time:"14:30", edits:[
+                {field:"SpO₂", from:"99%", to:"98%"},{field:"Temp",from:"37.0°C",to:"37.5°C"}
+            ]},{ userName:"John Doe", userId:"U001", patientName:"Jane Smith", date:"8/1/25", time:"14:30", edits:[
+                {field:"SpO₂", from:"99%", to:"98%"},{field:"Temp",from:"37.0°C",to:"37.5°C"}
+            ]},{ userName:"John Doe", userId:"U001", patientName:"Jane Smith", date:"8/1/25", time:"14:30", edits:[
+                {field:"SpO₂", from:"99%", to:"98%"},{field:"Temp",from:"37.0°C",to:"37.5°C"}
+            ]},{ userName:"John Doe", userId:"U001", patientName:"Jane Smith", date:"8/1/25", time:"14:30", edits:[
+                {field:"SpO₂", from:"99%", to:"98%"},{field:"Temp",from:"37.0°C",to:"37.5°C"}
+            ]},{ userName:"John Doe", userId:"U001", patientName:"Jane Smith", date:"8/1/25", time:"14:30", edits:[
+                {field:"SpO₂", from:"99%", to:"98%"},{field:"Temp",from:"37.0°C",to:"37.5°C"}
+            ]},{ userName:"John Doe", userId:"U001", patientName:"Jane Smith", date:"8/1/25", time:"14:30", edits:[
+                {field:"SpO₂", from:"99%", to:"98%"},{field:"Temp",from:"37.0°C",to:"37.5°C"}
+            ]},{ userName:"John Doe", userId:"U001", patientName:"Jane Smith", date:"8/1/25", time:"14:30", edits:[
+                {field:"SpO₂", from:"99%", to:"98%"},{field:"Temp",from:"37.0°C",to:"37.5°C"}
+            ]},
+            { userName:"Anna Lim", userId:"U002", patientName:"Michael Tan", date:"8/1/25", time:"10:15", edits:[
+                {field:"Pulse",from:"72",to:"74"}
+            ]},
+            { userName:"Carl Wong", userId:"U003", patientName:"Lisa Ng", date:"8/1/24", time:"16:00", edits:[
+                {field:"BP",from:"120/80",to:"125/85"},{field:"HR",from:"80",to:"82"}
+            ]},
+            // …more…
+        ];
+
+        // --- State ---
+        let currentLogs = [...logs];
+        const pageSize = 10;
+        let currentPage = 1;
+
+        // --- Utility to parse `MM/DD/YY` + `HH:mm` into Date ---
+        function parseDateTime(log) {
+            const [m,d,y] = log.date.split('/');
+            return new Date(`20${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}T${log.time}`);
+        }
+
+        // --- Sorting ---
+        function sortLogs(type) {
+            currentLogs.sort((a,b)=>{
+                switch(type){
+                    case "recent":    return parseDateTime(b)-parseDateTime(a);
+                    case "oldest":    return parseDateTime(a)-parseDateTime(b);
+                    case "user-asc":  return a.userName.localeCompare(b.userName);
+                    case "user-desc": return b.userName.localeCompare(a.userName);
+                    case "patient-asc": return a.patientName.localeCompare(b.patientName);
+                    case "patient-desc":return b.patientName.localeCompare(a.patientName);
+                    case "edits-asc": return a.edits.length-b.edits.length;
+                    case "edits-desc":return b.edits.length-a.edits.length;
+                    default: return 0;
+                }
+            });
+        }
+
+        // --- Date-range filtering ---
+        function applyDateFilter(days) {
+            if (days==="all") {
+                currentLogs = [...logs];
+            } else {
+                const cutoff = Date.now() - days*24*60*60*1000;
+                currentLogs = logs.filter(l=> parseDateTime(l).getTime()>=cutoff );
+            }
+        }
+
+        // --- Rendering logs page …
+        function renderLogs() {
+            const container = document.getElementById("logsContainer");
+            container.innerHTML="";
+
+            const start = (currentPage-1)*pageSize;
+            const pageLogs = currentLogs.slice(start, start+pageSize);
+
+            pageLogs.forEach(log=>{
+                // Row
+                const row = document.createElement("div");
+                row.className="grid grid-cols-6 items-center bg-white hover:bg-gray-50 cursor-pointer border-b p-3 text-sm";
+                row.innerHTML=`
+                    <div>${log.userName}</div>
+                    <div>${log.userId}</div>
+                    <div>${log.patientName}</div>
+                    <div>${log.date}</div>
+                    <div>${log.time}</div>
+                    <div>${log.edits.length}</div>
+                `;
+
+                // Details
+                const detail = document.createElement("div");
+                detail.className="col-span-6 bg-gray-50 px-6 py-4 text-sm hidden";
+                detail.innerHTML=`
+                    <div class="flex flex-wrap gap-2">
+                        ${log.edits.map(e=>`
+                            <div class="bg-white border border-gray-300 rounded-lg px-3 py-1 shadow-sm text-xs">
+                                <strong>${e.field}:</strong> ${e.from} → <span class="text-green-600">${e.to}</span>
+                            </div>
+                        `).join("")}
+                    </div>
+                `;
+
+                row.onclick = ()=> detail.classList.toggle("hidden");
+                container.appendChild(row);
+                container.appendChild(detail);
             });
 
-            container.appendChild(row);
-            container.appendChild(detailRow);
-        });
-    };
+            renderPagination();
+        }
 
-    const searchInput = document.getElementById("searchInput");
-    const suggestions = document.getElementById("suggestions");
-    const clearSearch = document.getElementById("clearSearch");
+        // Pagination controls
+        function renderPagination() {
+            const totalPages = Math.ceil(currentLogs.length / pageSize);
+            const pag = document.getElementById("pagination");
+            pag.innerHTML = "";
 
-    function updateSuggestions(query) {
-        const names = [...new Set(logs.flatMap(log => [log.userName, log.patientName]))];
-        const filtered = names.filter(name => name.toLowerCase().includes(query.toLowerCase()));
-        suggestions.innerHTML = "";
+            if (totalPages <= 1) return;  // no controls if single page
 
-        if (filtered.length === 0) {
-            suggestions.innerHTML = `<li class="px-4 py-2 text-gray-500">No results</li>`;
-        } else {
-            filtered.forEach(name => {
-                const li = document.createElement("li");
-                li.textContent = name;
-                li.className = "px-4 py-2 hover:bg-gray-100 cursor-pointer";
-                li.onclick = () => {
-                    searchInput.value = name;
-                    filterLogs(name);
+            // helper to create a page-nav button
+            const makeBtn = (text, page, disabled, active) => {
+                const b = document.createElement("button");
+                b.textContent = text;
+                b.disabled = disabled;
+
+                // base styling
+                let classes = [
+                    "px-2", "py-1", "rounded",
+                    "transition", "duration-150", "text-sm",
+                ];
+
+                if (active) {
+                    classes.push("bg-blue-600", "text-white", "font-semibold");
+                } else if (disabled) {
+                    classes.push("text-gray-400");
+                } else {
+                    classes.push("text-gray-700", "hover:bg-blue-100", "hover:text-blue-700");
+                }
+
+                b.className = classes.join(" ");
+                if (!disabled && !active) {
+                    b.addEventListener("click", () => {
+                        currentPage = page;
+                        renderLogs();
+                    });
+                } else if (active) {
+                    // still allow jumping to that page
+                    b.addEventListener("click", () => {
+                        currentPage = page;
+                        renderLogs();
+                    });
+                }
+                return b;
+            };
+
+            // first / prev
+            pag.appendChild(makeBtn("«", 1, currentPage === 1, false));
+            pag.appendChild(makeBtn("〈", currentPage - 1, currentPage === 1, false));
+
+            // page numbers around current
+            const start = Math.max(1, currentPage - 2);
+            const end   = Math.min(totalPages, currentPage + 2);
+            for (let i = start; i <= end; i++) {
+                pag.appendChild(makeBtn(i, i, false, i === currentPage));
+            }
+
+            // next / last
+            pag.appendChild(makeBtn("〉", currentPage + 1, currentPage === totalPages, false));
+            pag.appendChild(makeBtn("»", totalPages,  currentPage === totalPages, false));
+        }
+
+        // --- Search & suggestions …
+        const searchInput = document.getElementById("searchInput"),
+              suggestions = document.getElementById("suggestions"),
+              clearSearch = document.getElementById("clearSearch");
+
+        function updateSuggestions(q) {
+            const names = [...new Set(logs.flatMap(l=>[l.userName,l.patientName]))];
+            const matches = names.filter(n=>n.toLowerCase().includes(q.toLowerCase()));
+            suggestions.innerHTML = matches.length
+                ? matches.map(n=>`<li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">${n}</li>`).join("")
+                : `<li class="px-4 py-2 text-gray-500">No results</li>`;
+            suggestions.querySelectorAll("li").forEach(li=>
+                li.onclick = ()=>{
+                    searchInput.value = li.textContent;
+                    applySearch(li.textContent);
                     suggestions.classList.add("hidden");
                     clearSearch.classList.remove("hidden");
-                };
-                suggestions.appendChild(li);
-            });
+                }
+            );
+            suggestions.classList.remove("hidden");
         }
-        suggestions.classList.remove("hidden");
-    }
 
-    function filterLogs(query) {
-        const lower = query.toLowerCase();
-        currentLogs = logs.filter(log =>
-            log.userName.toLowerCase().includes(lower) ||
-            log.patientName.toLowerCase().includes(lower)
-        );
-        renderLogs();
-    }
-
-    function resetSearch() {
-        searchInput.value = '';
-        currentLogs = [...logs];
-        suggestions.classList.add("hidden");
-        clearSearch.classList.add("hidden");
-        renderLogs();
-    }
-
-    searchInput.addEventListener("input", (e) => {
-        const value = e.target.value.trim();
-        if (value === "") {
-            resetSearch();
-        } else {
-            updateSuggestions(value);
-            filterLogs(value);
-            clearSearch.classList.remove("hidden");
-        }
-    });
-
-    clearSearch.addEventListener("click", resetSearch);
-
-    document.addEventListener("click", (e) => {
-        if (!searchInput.contains(e.target) && !suggestions.contains(e.target)) {
-            suggestions.classList.add("hidden");
-        }
-    });
-
-    searchInput.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") resetSearch();
-    });
-
-    document.addEventListener("DOMContentLoaded", () => {
-        sortLogs("recent");
-        renderLogs();
-        document.getElementById("sortSelect").addEventListener("change", (e) => {
-            sortLogs(e.target.value);
+        function applySearch(q) {
+            const lower = q.toLowerCase();
+            currentLogs = logs.filter(l=>
+                l.userName.toLowerCase().includes(lower) ||
+                l.patientName.toLowerCase().includes(lower)
+            );
+            currentPage=1;
             renderLogs();
+        }
+
+        function resetSearch(){
+            searchInput.value="";
+            clearSearch.classList.add("hidden");
+            suggestions.classList.add("hidden");
+            applyDateFilter(dateFilter.value);
+            sortLogs(sortSelect.value);
+            currentPage=1;
+            renderLogs();
+        }
+
+        searchInput.addEventListener("input",e=>{
+            const v=e.target.value.trim();
+            if(!v) return resetSearch();
+            updateSuggestions(v);
+            applySearch(v);
+            clearSearch.classList.remove("hidden");
         });
-    });
-</script>
+        clearSearch.onclick = resetSearch;
+        searchInput.addEventListener("keydown",e=> e.key==="Escape" && resetSearch());
+        document.addEventListener("click",e=>{
+            if(!searchInput.contains(e.target) && !suggestions.contains(e.target))
+                suggestions.classList.add("hidden");
+        });
+
+        // --- Persist sort & date filters ---
+        const sortSelect = document.getElementById("sortSelect"),
+              dateFilter = document.getElementById("dateFilter");
+
+        function saveFilters(){
+            localStorage.setItem("logSort", sortSelect.value);
+            localStorage.setItem("logDate", dateFilter.value);
+        }
+        function loadFilters(){
+            sortSelect.value = localStorage.getItem("logSort") || "recent";
+            dateFilter.value = localStorage.getItem("logDate") || "all";
+        }
+
+        // --- Wire up on load ---
+        document.addEventListener("DOMContentLoaded",()=>{
+            loadFilters();
+            applyDateFilter(dateFilter.value);
+            sortLogs(sortSelect.value);
+            renderLogs();
+
+            sortSelect .addEventListener("change", ()=>{
+                saveFilters();
+                sortLogs(sortSelect.value);
+                currentPage=1;
+                renderLogs();
+            });
+            dateFilter.addEventListener("change", ()=>{
+                saveFilters();
+                applyDateFilter(dateFilter.value);
+                sortLogs(sortSelect.value);
+                currentPage=1;
+                renderLogs();
+            });
+        });
+    </script>
 
 </body>
 </html>
