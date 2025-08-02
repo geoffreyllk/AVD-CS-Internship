@@ -82,7 +82,12 @@ app.put('/mysql/patients/:id', (req, res) => {
 // === MySQL Route to Get Hospital Users ===
 app.get('/api/hospital-users', (req, res) => {
   db.query('SELECT hospital_id, access_level FROM hospital_users', (err, results) => {
-    if (err) return res.status(500).json({ error: 'Failed to fetch hospital users' });
+    if (err) {
+      console.error('❌ Query error:', err);  // Log error
+      return res.status(500).json({ error: 'Failed to fetch hospital users' });
+    }
+
+    console.log('✅ Query successful, results:', results);  // Log data
     res.json(results);
   });
 });
