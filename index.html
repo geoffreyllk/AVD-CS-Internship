@@ -46,6 +46,31 @@
 
             <div id="grid-container" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 transition-all"></div>
 
+            <!-- Patient Modal -->
+            <div id="patientModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white w-11/12 md:w-3/4 lg:w-2/3 h-5/6 rounded-lg shadow-lg flex overflow-hidden">
+
+                    <!-- Side Navigation -->
+                    <div class="w-1/4 bg-gray-100 border-r p-4">
+                        <h2 class="font-bold mb-4">Sections</h2>
+                        <ul class="space-y-2">
+                            <li><button class="section-btn w-full text-left px-2 py-1 rounded hover:bg-gray-200" data-section="allergy">Allergy</button></li>
+                            <li><button class="section-btn w-full text-left px-2 py-1 rounded hover:bg-gray-200" data-section="diagnosis">Diagnosis</button></li>
+                            <li><button class="section-btn w-full text-left px-2 py-1 rounded hover:bg-gray-200" data-section="treatment">Treatment</button></li>
+                            <li><button class="section-btn w-full text-left px-2 py-1 rounded hover:bg-gray-200" data-section="orders">Orders</button></li>
+                            <li><button class="section-btn w-full text-left px-2 py-1 rounded hover:bg-gray-200" data-section="notes">Notes</button></li>
+                        </ul>
+                    </div>
+
+                    <!-- Content Area -->
+                    <div class="w-3/4 p-6 overflow-y-auto relative">
+                        <button id="closeModal" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl">&times;</button>
+                        <div id="modalContent"></div>
+                    </div>
+
+                </div>
+            </div>
+
             <!-- Edit Modal -->
             <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
                 <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-3xl animate-fadeIn">
@@ -313,7 +338,6 @@
                     <div>${displayNumeric(p.spo2, '%', t.spo2)}</div>
                     <div>
                         ${displayNumeric(p.temperature.celsius, '°C', t.tempC)}
-                        /
                         ${displayNumeric(p.temperature.fahrenheit, '°F', t.tempF)}
                     </div>
                     <div>
@@ -397,7 +421,38 @@
 
             document.querySelectorAll('.edit-btn').forEach((btn, index) => {
                 btn.addEventListener('click', () => showEditModal(patientsData[index]));
+
             });
+
+            // Attach modal open to cards (only in card view)
+            if (currentView !== 'list') {
+                document.querySelectorAll('.bg-white.p-4.rounded-lg.shadow-md').forEach((card, index) => {
+                    card.addEventListener('click', (e) => {
+                        // Prevent modal if clicking the Edit button inside card
+                        if (!e.target.classList.contains('edit-btn')) {
+                            showPatientModal(patientsData[index]);
+                        }
+                    });
+                });
+            }
+        }
+
+        function showPatientModal(patient) {
+            const modal = document.getElementById('patientModal');
+            modal.classList.remove('hidden'); // 🔑 show modal
+
+            // Default section
+            renderSection('allergy', patient);
+
+            // Side navigation buttons
+            document.querySelectorAll('.section-btn').forEach(btn => {
+                btn.onclick = () => renderSection(btn.dataset.section, patient);
+            });
+
+            // Close modal
+            document.getElementById('closeModal').onclick = () => {
+                modal.classList.add('hidden'); // 🔑 hide modal
+            };
         }
 
         function loadPatients() {
@@ -407,6 +462,191 @@
                     patientsData = data.map(validatePatient);
                     renderPatients();
               });
+        }
+
+        const allergyData = {
+            "Food Allergy": "",
+            "Indoor and Seasonal Allergy": "",
+            "Insect Sting Allergy": "",
+            "Drug Allergy": "",
+            "Skin Allergy": ""
+        };
+
+        const notesData = {
+            "General Practitioners (GP)": "",
+            "Family Physicians": "",
+            "Internists": "",
+            "Cardiologists": "",
+            "Neurologists": "",
+            "Oncologists": "",
+            "Dermatologists": "",
+            "Gastroenterologists": "",
+            "Endocrinologists": "",
+            "Nephrologists": "",
+            "Rheumatologists": "",
+            "Pulmonologists": "",
+            "Infectious Disease Specialists": "",
+            "Psychiatrists": "",
+            "Pediatricians": "",
+            "Gynecologists and Obstetricians (OB)": "",
+            "General Surgeon": "",
+            "Orthopedic Surgeon": "",
+            "Neurosurgeon": "",
+            "Cardiothoracic Surgeon": "",
+            "Plastic Surgeon": "",
+            "Urologists": "",
+            "Ophthalmologists": "",
+            "Anesthesiologists": "",
+            "Radiologists": "",
+            "Pathologists": "",
+            "Emergency Medicine Physicians": "",
+            "Rehabilitation Medicine Specialists": "",
+            "Sports Medicine Physicians": "",
+            "Hematologists": "",
+            "Otolaryngologists": "",
+            "Nutritionists": "",
+            "Dentist": "",
+            "Paramedics": "",
+            "Physical Therapists": "",
+            "Occupational Therapists": "",
+            "Psychologists": "",
+            "Midwives": "",
+            "Optometrists": ""
+        };
+
+        // Store notes persistently per patient
+        if (!window.patientNotes) window.patientNotes = {};
+
+        function renderSection(section, patient) {
+            let html = '';
+
+            if (section === 'allergy') {
+                const options = Object.keys(allergyData);
+                html = `
+                  <h2 class="text-xl font-semibold mb-4">Allergy</h2>
+                  <label class="block mb-2 font-medium">Select Allergy Type</label>
+                  <select id="allergySelect" class="border rounded px-2 py-1 mb-3 w-full">
+                    ${options.map(o => `<option value="${o}">${o}</option>`).join('')}
+                  </select>
+                  <textarea id="allergyTextarea" class="w-full border-2 border-black rounded p-2 h-40 text-sm"></textarea>
+                  <div class="flex justify-end space-x-2 mt-4">
+                    <button id="saveBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700">Save</button>
+                  </div>
+                `;
+                setTimeout(() => setupDropdown('allergySelect', 'allergyTextarea', allergyData), 0);
+            }
+
+            else if (section === 'diagnosis') {
+                html = `
+                  <h2 class="text-xl font-semibold mb-4">Diagnosis</h2>
+                  <textarea id="diagnosisTextarea" class="w-full border-2 border-black rounded p-2 h-60 text-sm"></textarea>
+                  <div class="flex justify-end space-x-2 mt-4">
+                    <button id="saveBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700">Save</button>
+                  </div>
+                `;
+            }
+
+            else if (section === 'treatment') {
+                html = `
+                  <h2 class="text-xl font-semibold mb-4">Treatment</h2>
+                  <textarea id="treatmentTextarea" class="w-full border-2 border-black rounded p-2 h-60 text-sm"></textarea>
+                  <div class="flex justify-end space-x-2 mt-4">
+                    <button id="saveBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700">Save</button>
+                  </div>
+                `;
+            }
+
+            else if (section === 'orders') {
+                html = `
+                  <h2 class="text-xl font-semibold mb-4">Orders</h2>
+                  <textarea id="ordersTextarea" class="w-full border-2 border-black rounded p-2 h-60 text-sm"></textarea>
+                  <div class="flex justify-end space-x-2 mt-4">
+                    <button id="saveBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700">Save</button>
+                  </div>
+                `;
+            }
+
+            else if (section === 'notes') {
+                const options = Object.keys(notesData);
+                html = `
+                  <h2 class="text-xl font-semibold mb-4">Notes</h2>
+                  <label class="block mb-2 font-medium">Select Doctor</label>
+                  <select id="notesSelect" class="border rounded px-2 py-1 mb-3 w-full">
+                    ${options.map(o => `<option value="${o}">${o}</option>`).join('')}
+                  </select>
+                  <textarea id="notesTextarea" class="w-full border-2 border-black rounded p-2 h-40 text-sm"></textarea>
+                  <div class="flex justify-end space-x-2 mt-4">
+                    <button id="saveNoteBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700">Save</button>
+                  </div>
+                  <div class="mt-6">
+                    <h3 class="text-lg font-semibold mb-2">Saved Notes</h3>
+                    <div id="savedNotes" class="border rounded p-2 h-40 overflow-y-auto bg-gray-50"></div>
+                    <button id="clearNotesBtn" class="mt-2 bg-red-600 text-white px-3 py-1 rounded-lg shadow-md hover:bg-red-700">Clear Saved Notes</button>
+                  </div>
+                `;
+
+                // Setup save and clear functionality
+                setTimeout(() => {
+                    const saveBtn = document.getElementById('saveNoteBtn');
+                    const clearBtn = document.getElementById('clearNotesBtn');
+                    const notesTextarea = document.getElementById('notesTextarea');
+                    const doctorSelect = document.getElementById('notesSelect');
+                    const savedNotesDiv = document.getElementById('savedNotes');
+
+                    if (!patient.savedNotes) patient.savedNotes = {};
+
+                    // Save note (button + Enter key)
+                    function saveNote() {
+                        const doctor = doctorSelect.value;
+                        const note = notesTextarea.value.trim();
+                        if (note === '') return;
+
+                        const now = new Date();
+                        const dateTime = now.toLocaleString();
+
+                        if (!patient.savedNotes[doctor]) {
+                            patient.savedNotes[doctor] = [];
+                        }
+                        patient.savedNotes[doctor].push(`${dateTime} - Comment: ${note}`);
+
+                        notesTextarea.value = '';
+                        renderSavedNotes();
+                    }
+
+                    saveBtn.addEventListener('click', saveNote);
+                    notesTextarea.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            saveNote();
+                        }
+                    });
+
+                    // Clear notes
+                    clearBtn.addEventListener('click', () => {
+                        patient.savedNotes = {};
+                        renderSavedNotes();
+                    });
+
+                    // Render saved notes
+                    function renderSavedNotes() {
+                        savedNotesDiv.innerHTML = '';
+                        for (const doctor in patient.savedNotes) {
+                            const notes = patient.savedNotes[doctor];
+                            const doctorBlock = document.createElement('div');
+                            doctorBlock.classList.add('mb-3', 'p-2', 'border-b');
+                            doctorBlock.innerHTML = `
+                                <p class="font-semibold">${doctor}</p>
+                                ${notes.map(n => `<p class="text-sm ml-2">${n}</p>`).join('')}
+                            `;
+                            savedNotesDiv.appendChild(doctorBlock);
+                        }
+                    }
+
+                    renderSavedNotes();
+                }, 0);
+            }
+
+            document.getElementById('modalContent').innerHTML = html;
         }
 
         function showEditModal(p) {
