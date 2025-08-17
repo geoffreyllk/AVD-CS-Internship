@@ -94,5 +94,5 @@ app.get('/api/hospital-users', (req, res) => {
 
 const PORT = 3333;
 app.listen(PORT, () => {
-  console.log('✅ Server running at http://localhost:${PORT}');
+  console.log(`✅ Server running at http://localhost:${PORT}`);
 });
