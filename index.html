@@ -501,7 +501,7 @@
             "Pathologists": "",
             "Emergency Medicine Physicians": "",
             "Rehabilitation Medicine Specialists": "",
-            "Sports Medicine Physicians": "",
+            "Sorts Medicine Physicians": "",
             "Hematologists": "",
             "Otolaryngologists": "",
             "Nutritionists": "",
@@ -514,139 +514,167 @@
             "Optometrists": ""
         };
 
-        // Store notes persistently per patient
-        if (!window.patientNotes) window.patientNotes = {};
+        // Load saved data from localStorage on page load
+        let patientDataStore = JSON.parse(localStorage.getItem('patientDataStore')) || {};
 
+        // Utility: Format timestamp
+        function getTimestamp() {
+          const now = new Date();
+          return now.toLocaleString(); // Example: "18/8/2025, 3:45:22 pm"
+        }
+
+        // Save data to localStorage whenever updated
+        function saveEntry(patientId, section, type, text) {
+          if (!patientDataStore[patientId]) {
+            patientDataStore[patientId] = {
+              notes: {},
+              allergy: {},
+              diagnosis: {},
+              treatment: {},
+              orders: {}
+            };
+          }
+          if (!patientDataStore[patientId][section][type]) {
+            patientDataStore[patientId][section][type] = [];
+          }
+          patientDataStore[patientId][section][type].push({
+            timestamp: getTimestamp(),
+            text
+          });
+
+          // ✅ persist to localStorage
+          localStorage.setItem('patientDataStore', JSON.stringify(patientDataStore));
+
+          renderSavedEntries(patientId, section);
+          persistToServer();
+        }
+
+
+        // Clear entries also updates localStorage
+        function clearEntries(patientId, section) {
+          if (patientDataStore[patientId]) {
+            patientDataStore[patientId][section] = {};
+            localStorage.setItem('patientDataStore', JSON.stringify(patientDataStore)); // ✅ update
+            renderSavedEntries(patientId, section);
+          }
+          persistToServer();
+        }
+
+        function persistToServer() {
+          fetch('/save-patient-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patientDataStore)
+          });
+        }
+
+        // Render saved entries for a section
+        function renderSavedEntries(patientId, section) {
+          const container = document.getElementById(`${section}Saved`);
+          if (!container) return;
+
+          const entries = patientDataStore[patientId]?.[section] || {};
+          let html = '';
+          for (const [type, comments] of Object.entries(entries)) {
+            html += `<div class="mb-2">
+                       <p class="font-medium">${type}</p>
+                       <div class="max-h-32 overflow-y-auto border rounded p-2 bg-gray-50">`;
+            comments.forEach(c => {
+              html += `<p class="text-sm"><span class="text-gray-500">${c.timestamp}</span> - Comment: ${c.text}</p>`;
+            });
+            html += `</div></div>`;
+          }
+
+          if (html) {
+            html += `<button onclick="clearEntries('${patientId}','${section}')"
+                           class="mt-2 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
+                       Clear Saved ${section.charAt(0).toUpperCase() + section.slice(1)}
+                     </button>`;
+          }
+
+          container.innerHTML = html;
+        }
+
+        // Render modal section
         function renderSection(section, patient) {
-            let html = '';
+          let html = '';
 
-            if (section === 'allergy') {
-                const options = Object.keys(allergyData);
-                html = `
-                  <h2 class="text-xl font-semibold mb-4">Allergy</h2>
-                  <label class="block mb-2 font-medium">Select Allergy Type</label>
-                  <select id="allergySelect" class="border rounded px-2 py-1 mb-3 w-full">
-                    ${options.map(o => `<option value="${o}">${o}</option>`).join('')}
-                  </select>
-                  <textarea id="allergyTextarea" class="w-full border-2 border-black rounded p-2 h-40 text-sm"></textarea>
-                  <div class="flex justify-end space-x-2 mt-4">
-                    <button id="saveBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700">Save</button>
-                  </div>
-                `;
-                setTimeout(() => setupDropdown('allergySelect', 'allergyTextarea', allergyData), 0);
+          if (section === 'allergy') {
+            const options = Object.keys(allergyData);
+            html = `
+              <h2 class="text-xl font-semibold mb-4">Allergy</h2>
+              <label class="block mb-2 font-medium">Select Allergy Type</label>
+              <select id="allergySelect" class="border rounded px-2 py-1 mb-3 w-full">
+                ${options.map(o => `<option value="${o}">${o}</option>`).join('')}
+              </select>
+              <textarea id="allergyTextarea" class="w-full border-black border rounded p-2 h-40 text-sm mb-3"></textarea>
+              <div class="flex justify-end gap-2">
+                <button id="allergySaveBtn" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">Save</button>
+                <button class="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400" onclick="closeModal()">Cancel</button>
+              </div>
+              <div id="allergySaved" class="mt-4"></div>
+            `;
+            setTimeout(() => setupSectionSave('allergy', patient.id, 'allergySelect', 'allergyTextarea', 'allergySaveBtn'), 0);
+          }
+
+          else if (['diagnosis', 'treatment', 'orders'].includes(section)) {
+            const label = section.charAt(0).toUpperCase() + section.slice(1);
+            html = `
+              <h2 class="text-xl font-semibold mb-4">${label}</h2>
+              <textarea id="${section}Textarea" class="w-full border-black border rounded p-2 h-40 text-sm mb-3"></textarea>
+              <div class="flex justify-end gap-2">
+                <button id="${section}SaveBtn" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">Save</button>
+                <button class="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400" onclick="closeModal()">Cancel</button>
+              </div>
+              <div id="${section}Saved" class="mt-4"></div>
+            `;
+            setTimeout(() => setupSectionSave(section, patient.id, null, `${section}Textarea`, `${section}SaveBtn`), 0);
+          }
+
+          else if (section === 'notes') {
+            const options = Object.keys(notesData);
+            html = `
+              <h2 class="text-xl font-semibold mb-4">Notes</h2>
+              <label class="block mb-2 font-medium">Select Doctor</label>
+              <select id="notesSelect" class="border rounded px-2 py-1 mb-3 w-full">
+                ${options.map(o => `<option value="${o}">${o}</option>`).join('')}
+              </select>
+              <textarea id="notesTextarea" class="w-full border-black border rounded p-2 h-40 text-sm mb-3"></textarea>
+              <div class="flex justify-end gap-2">
+                <button id="notesSaveBtn" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">Save</button>
+                <button class="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400" onclick="closeModal()">Cancel</button>
+              </div>
+              <div id="notesSaved" class="mt-4"></div>
+            `;
+            setTimeout(() => setupSectionSave('notes', patient.id, 'notesSelect', 'notesTextarea', 'notesSaveBtn'), 0);
+          }
+
+          document.getElementById('modalContent').innerHTML = html;
+          renderSavedEntries(patient.id, section);
+        }
+
+        // Setup save button and Enter key handling for a section
+        function setupSectionSave(section, patientId, selectId, textareaId, saveBtnId) {
+          const textarea = document.getElementById(textareaId);
+          const saveBtn = document.getElementById(saveBtnId);
+          const select = selectId ? document.getElementById(selectId) : null;
+
+          function handleSave() {
+            const type = select ? select.value : section;
+            const text = textarea.value.trim();
+            if (text) {
+              saveEntry(patientId, section, type, text);
+              textarea.value = '';
             }
+          }
 
-            else if (section === 'diagnosis') {
-                html = `
-                  <h2 class="text-xl font-semibold mb-4">Diagnosis</h2>
-                  <textarea id="diagnosisTextarea" class="w-full border-2 border-black rounded p-2 h-60 text-sm"></textarea>
-                  <div class="flex justify-end space-x-2 mt-4">
-                    <button id="saveBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700">Save</button>
-                  </div>
-                `;
+          saveBtn.addEventListener('click', handleSave);
+          textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSave();
             }
-
-            else if (section === 'treatment') {
-                html = `
-                  <h2 class="text-xl font-semibold mb-4">Treatment</h2>
-                  <textarea id="treatmentTextarea" class="w-full border-2 border-black rounded p-2 h-60 text-sm"></textarea>
-                  <div class="flex justify-end space-x-2 mt-4">
-                    <button id="saveBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700">Save</button>
-                  </div>
-                `;
-            }
-
-            else if (section === 'orders') {
-                html = `
-                  <h2 class="text-xl font-semibold mb-4">Orders</h2>
-                  <textarea id="ordersTextarea" class="w-full border-2 border-black rounded p-2 h-60 text-sm"></textarea>
-                  <div class="flex justify-end space-x-2 mt-4">
-                    <button id="saveBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700">Save</button>
-                  </div>
-                `;
-            }
-
-            else if (section === 'notes') {
-                const options = Object.keys(notesData);
-                html = `
-                  <h2 class="text-xl font-semibold mb-4">Notes</h2>
-                  <label class="block mb-2 font-medium">Select Doctor</label>
-                  <select id="notesSelect" class="border rounded px-2 py-1 mb-3 w-full">
-                    ${options.map(o => `<option value="${o}">${o}</option>`).join('')}
-                  </select>
-                  <textarea id="notesTextarea" class="w-full border-2 border-black rounded p-2 h-40 text-sm"></textarea>
-                  <div class="flex justify-end space-x-2 mt-4">
-                    <button id="saveNoteBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700">Save</button>
-                  </div>
-                  <div class="mt-6">
-                    <h3 class="text-lg font-semibold mb-2">Saved Notes</h3>
-                    <div id="savedNotes" class="border rounded p-2 h-40 overflow-y-auto bg-gray-50"></div>
-                    <button id="clearNotesBtn" class="mt-2 bg-red-600 text-white px-3 py-1 rounded-lg shadow-md hover:bg-red-700">Clear Saved Notes</button>
-                  </div>
-                `;
-
-                // Setup save and clear functionality
-                setTimeout(() => {
-                    const saveBtn = document.getElementById('saveNoteBtn');
-                    const clearBtn = document.getElementById('clearNotesBtn');
-                    const notesTextarea = document.getElementById('notesTextarea');
-                    const doctorSelect = document.getElementById('notesSelect');
-                    const savedNotesDiv = document.getElementById('savedNotes');
-
-                    if (!patient.savedNotes) patient.savedNotes = {};
-
-                    // Save note (button + Enter key)
-                    function saveNote() {
-                        const doctor = doctorSelect.value;
-                        const note = notesTextarea.value.trim();
-                        if (note === '') return;
-
-                        const now = new Date();
-                        const dateTime = now.toLocaleString();
-
-                        if (!patient.savedNotes[doctor]) {
-                            patient.savedNotes[doctor] = [];
-                        }
-                        patient.savedNotes[doctor].push(`${dateTime} - Comment: ${note}`);
-
-                        notesTextarea.value = '';
-                        renderSavedNotes();
-                    }
-
-                    saveBtn.addEventListener('click', saveNote);
-                    notesTextarea.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            saveNote();
-                        }
-                    });
-
-                    // Clear notes
-                    clearBtn.addEventListener('click', () => {
-                        patient.savedNotes = {};
-                        renderSavedNotes();
-                    });
-
-                    // Render saved notes
-                    function renderSavedNotes() {
-                        savedNotesDiv.innerHTML = '';
-                        for (const doctor in patient.savedNotes) {
-                            const notes = patient.savedNotes[doctor];
-                            const doctorBlock = document.createElement('div');
-                            doctorBlock.classList.add('mb-3', 'p-2', 'border-b');
-                            doctorBlock.innerHTML = `
-                                <p class="font-semibold">${doctor}</p>
-                                ${notes.map(n => `<p class="text-sm ml-2">${n}</p>`).join('')}
-                            `;
-                            savedNotesDiv.appendChild(doctorBlock);
-                        }
-                    }
-
-                    renderSavedNotes();
-                }, 0);
-            }
-
-            document.getElementById('modalContent').innerHTML = html;
+          });
         }
 
         function showEditModal(p) {

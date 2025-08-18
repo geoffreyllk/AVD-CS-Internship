@@ -33,7 +33,12 @@
       "systolic": 124,
       "diastolic": 84
     },
-    "lastUpdated": "2025-08-01T07:39:55.579Z"
+    "lastUpdated": "2025-08-01T07:39:55.579Z",
+    "notes": {},
+    "allergy": {},
+    "diagnosis": {},
+    "treatment": {},
+    "orders": {}
   },
   {
     "id": "P003",
@@ -52,7 +57,12 @@
       "fahrenheit": 97.7
     },
     "pulseRate": 66,
-    "lastUpdated": "2025-07-10T13:45:00"
+    "lastUpdated": "2025-07-10T13:45:00",
+    "notes": {},
+    "allergy": {},
+    "diagnosis": {},
+    "treatment": {},
+    "orders": {}
   },
   {
     "id": "P004",
@@ -71,6 +81,34 @@
       "fahrenheit": 98.2
     },
     "pulseRate": 77,
-    "lastUpdated": "2025-07-10T14:55:00"
+    "lastUpdated": "2025-07-10T14:55:00",
+    "notes": {},
+    "allergy": {},
+    "diagnosis": {},
+    "treatment": {},
+    "orders": {}
+  },
+  {
+    "id": "P005",
+    "name": "Kronk",
+    "age": 103,
+    "gender": "Male",
+    "heartRate": 60,
+    "pulseRate": 80,
+    "spo2": 70,
+    "temperature": {
+      "celsius": 38.4,
+      "fahrenheit": 101.2
+    },
+    "bloodPressure": {
+      "systolic": 110,
+      "diastolic": 45
+    },
+    "lastUpdated": "2025-08-18T06:06:47.834Z",
+    "notes": {},
+    "allergy": {},
+    "diagnosis": {},
+    "treatment": {},
+    "orders": {}
   }
 ]

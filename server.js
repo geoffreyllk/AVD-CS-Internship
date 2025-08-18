@@ -37,6 +37,53 @@ app.put('/patients/:id', (req, res) => {
   });
 });
 
+// === Save Section Data ===
+app.post('/saveSection', (req, res) => {
+  const { patientId, section, doctorType, text } = req.body;
+
+  let patients = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  let patient = patients.find(p => p.id === patientId);
+
+  if (!patient) return res.status(404).send("Patient not found");
+
+  if (!patient[section]) patient[section] = {};
+
+  if (!patient[section][doctorType]) {
+    patient[section][doctorType] = [];
+  }
+
+  const entry = {
+    timestamp: new Date().toISOString(),
+    comment: text
+  };
+
+  patient[section][doctorType].push(entry);
+
+  fs.writeFileSync(filePath, JSON.stringify(patients, null, 2));
+
+  res.json({ success: true, data: patient[section] });
+});
+
+// === Load Section Data ===
+app.get('/getSection/:patientId/:section', (req, res) => {
+  const { patientId, section } = req.params;
+
+  let patients = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  let patient = patients.find(p => p.id === patientId);
+
+  if (!patient) return res.status(404).send("Patient not found");
+
+  res.json(patient[section] || {});
+});
+
+// == Save Patient Data ==
+app.post('/save-patient-data', (req, res) => {
+  const updatedData = req.body;
+
+  fs.writeFileSync(filePath, JSON.stringify(updatedData, null, 2));
+  res.json({ success: true });
+});
+
 // === MySQL Setup ===
 const mysql = require('mysql2');
 
