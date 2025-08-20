@@ -1,144 +1,196 @@
 const express = require('express');
+const mysql = require('mysql2');
 const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const filePath = path.join(__dirname, 'patients.json');
-
-app.use(express.static(__dirname)); // serve index.html, etc.
+app.use(express.static(__dirname));
 app.use(express.json());
 
-// Load all patients
-app.get('/patients.json', (req, res) => {
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) return res.status(500).send('Error reading file');
-    res.send(data);
-  });
-});
-
-// Update a patient by ID
-app.put('/patients/:id', (req, res) => {
-  const updatedPatient = req.body;
-  const id = req.params.id;
-
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) return res.status(500).send('Error reading file');
-
-    let patients = JSON.parse(data);
-    const index = patients.findIndex(p => p.id == id);
-    if (index === -1) return res.status(404).send('Patient not found');
-
-    patients[index] = updatedPatient;
-
-    fs.writeFile(filePath, JSON.stringify(patients, null, 2), err => {
-      if (err) return res.status(500).send('Error writing file');
-      res.send({ success: true });
-    });
-  });
-});
-
-// === Save Section Data ===
-app.post('/saveSection', (req, res) => {
-  const { patientId, section, doctorType, text } = req.body;
-
-  let patients = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  let patient = patients.find(p => p.id === patientId);
-
-  if (!patient) return res.status(404).send("Patient not found");
-
-  if (!patient[section]) patient[section] = {};
-
-  if (!patient[section][doctorType]) {
-    patient[section][doctorType] = [];
-  }
-
-  const entry = {
-    timestamp: new Date().toISOString(),
-    comment: text
-  };
-
-  patient[section][doctorType].push(entry);
-
-  fs.writeFileSync(filePath, JSON.stringify(patients, null, 2));
-
-  res.json({ success: true, data: patient[section] });
-});
-
-// === Load Section Data ===
-app.get('/getSection/:patientId/:section', (req, res) => {
-  const { patientId, section } = req.params;
-
-  let patients = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  let patient = patients.find(p => p.id === patientId);
-
-  if (!patient) return res.status(404).send("Patient not found");
-
-  res.json(patient[section] || {});
-});
-
-// == Save Patient Data ==
-app.post('/save-patient-data', (req, res) => {
-  const updatedData = req.body;
-
-  fs.writeFileSync(filePath, JSON.stringify(updatedData, null, 2));
-  res.json({ success: true });
-});
-
-// === MySQL Setup ===
-const mysql = require('mysql2');
-
-const db = mysql.createConnection({
+// Database connections
+const hospitalDB = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: 'avdex2025',
   database: 'hospital_db'
 });
 
-db.connect((err) => {
-  if (err) {
-    console.error('❌ MySQL connection failed:', err.message);
-    return;
-  }
-  console.log('✅ Connected to MySQL');
+const patientDB = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: 'avdex2025',
+  database: 'patient_db',
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-// === GET all patients from MySQL ===
-app.get('/mysql/patients', (req, res) => {
-  db.query('SELECT * FROM patients', (err, results) => {
-    if (err) return res.status(500).send('❌ Error querying database');
+// Test database connections
+hospitalDB.connect((err) => {
+  if (err) {
+    console.error('❌ Failed to connect to hospital_db:', err.message);
+  } else {
+    console.log('✅ Connected to hospital_db successfully');
+  }
+});
+
+patientDB.getConnection((err, connection) => {
+  if (err) {
+    console.error('❌ Failed to connect to patient_db:', err.message);
+  } else {
+    console.log('✅ Connected to patient_db successfully');
+    connection.release();
+  }
+});
+
+// ===== HOSPITAL DATABASE ENDPOINTS =====
+
+// Get hospital users for authentication
+app.get('/api/hospital-users', (req, res) => {
+  hospitalDB.query('SELECT hospital_id, access_level FROM hospital_users', (err, results) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch hospital users' });
     res.json(results);
   });
 });
 
-// === PUT (update) patient by ID in MySQL ===
-app.put('/mysql/patients/:id', (req, res) => {
-  const id = req.params.id;
-  const { name, age, diagnosis } = req.body;
+// ===== PATIENT DATABASE ENDPOINTS =====
 
-  db.query(
-    'UPDATE patients SET name = ?, age = ?, diagnosis = ? WHERE id = ?',
-    [name, age, diagnosis, id],
+// Get all patients
+app.get('/api/patients', (req, res) => {
+  patientDB.query('SELECT * FROM patients', (err, results) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+
+    // Map to match existing frontend structure
+    const formatted = results.map(p => ({
+      id: p.id,
+      name: p.name,
+      age: p.age,
+      gender: p.gender,
+      heartRate: p.heart_rate,
+      pulseRate: p.pulse_rate,
+      spo2: p.spo2,
+      temperature: {
+        celsius: p.temp_celsius,
+        fahrenheit: p.temp_fahrenheit
+      },
+      bloodPressure: {
+        systolic: p.bp_systolic,
+        diastolic: p.bp_diastolic
+      },
+      lastUpdated: p.last_updated
+    }));
+
+    res.json(formatted);
+  });
+});
+
+// Update patient
+app.put('/api/patients/:id', (req, res) => {
+  const patientId = req.params.id;
+  const updateData = {
+    name: req.body.name,
+    age: req.body.age,
+    gender: req.body.gender,
+    heart_rate: req.body.heartRate,
+    pulse_rate: req.body.pulseRate,
+    spo2: req.body.spo2,
+    temp_celsius: req.body.temperature?.celsius,
+    temp_fahrenheit: req.body.temperature?.fahrenheit,
+    bp_systolic: req.body.bloodPressure?.systolic,
+    bp_diastolic: req.body.bloodPressure?.diastolic,
+    last_updated: new Date().toISOString().slice(0, 19).replace('T', ' ')
+  };
+
+  patientDB.query(
+    'UPDATE patients SET ? WHERE id = ?',
+    [updateData, patientId],
     (err, result) => {
-      if (err) return res.status(500).send('❌ Error updating patient');
-      if (result.affectedRows === 0) return res.status(404).send('Patient not found');
-      res.send({ success: true, updated: result.affectedRows });
+      if (err) return res.status(500).json({ error: 'Update failed' });
+      if (result.affectedRows === 0) return res.status(404).json({ error: 'Patient not found' });
+
+      // Log changes to audit table
+      const changes = Object.keys(req.body)
+        .filter(key => key !== 'lastUpdated')
+        .map(key => ({
+          user_id: 'CURRENT_USER', // Will implement in next step
+          user_name: 'CURRENT_USER_NAME',
+          patient_id: patientId,
+          action: 'UPDATE',
+          field: key,
+          old_value: 'PREV_VALUE', // Need previous values
+          new_value: req.body[key]
+        }));
+
+      if (changes.length > 0) {
+        patientDB.query('INSERT INTO audit_logs SET ?', changes);
+      }
+
+      res.json({ success: true });
     }
   );
 });
 
-// === MySQL Route to Get Hospital Users ===
-app.get('/api/hospital-users', (req, res) => {
-  db.query('SELECT hospital_id, access_level FROM hospital_users', (err, results) => {
-    if (err) {
-      console.error('❌ Query error:', err);  // Log error
-      return res.status(500).json({ error: 'Failed to fetch hospital users' });
+// GET /api/audit-logs
+app.get('/api/audit-logs', (req, res) => {
+    const conn = typeof db !== 'undefined' ? db : (typeof patientDB !== 'undefined' ? patientDB : null);
+    if (!conn) {
+        console.error('No DB connection variable found. Expected `db` or `patientDB`.');
+        return res.status(500).json({ error: 'Server misconfiguration: no DB connection' });
     }
 
-    console.log('✅ Query successful, results:', results);  // Log data
-    res.json(results);
-  });
+    const sql = `
+        SELECT
+            a.user_id      AS userId,
+            a.user_name    AS userName,
+            a.patient_id   AS patientId,
+            COALESCE(p.name, a.patient_id) AS patientName,
+            a.action,
+            a.field,
+            a.old_value    AS oldValue,
+            a.new_value    AS newValue,
+            DATE_FORMAT(a.timestamp, '%m/%d/%y') AS date,
+            DATE_FORMAT(a.timestamp, '%H:%i')     AS time
+        FROM audit_logs a
+        LEFT JOIN patients p ON a.patient_id = p.id
+        ORDER BY a.timestamp DESC
+        LIMIT 1000
+    `;
+
+    conn.query(sql, (err, results) => {
+        if (err) {
+            console.error('Database error in /api/audit-logs:', err);   // <--- FULL error printed to server console
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+
+        // Group rows that belong to the same logical change by (user, patient, date, time)
+        // This groups multiple field edits that share the same timestamp into one entry.
+        const grouped = results.reduce((acc, row) => {
+            const key = `${row.userId}||${row.patientId}||${row.date}||${row.time}`;
+            if (!acc[key]) {
+                acc[key] = {
+                    userId: row.userId,
+                    userName: row.userName,
+                    patientId: row.patientId,
+                    patientName: row.patientName,
+                    date: row.date,
+                    time: row.time,
+                    edits: []
+                };
+            }
+            acc[key].edits.push({
+                field: row.field,
+                from: row.oldValue,
+                to: row.newValue
+            });
+            return acc;
+        }, {});
+
+        const payload = Object.values(grouped);
+        return res.json(payload);
+    });
 });
 
+
+// Start server
 const PORT = 3333;
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);

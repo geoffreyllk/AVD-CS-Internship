@@ -456,7 +456,7 @@
         }
 
         function loadPatients() {
-            fetch('patients.json')
+            fetch('/api/patients')
                 .then(res => res.json())
                 .then(data => {
                     patientsData = data.map(validatePatient);
@@ -726,15 +726,20 @@
             }
 
             try {
-                const resp = await fetch(`/patients/${clean.id}`, {
-                    method:  'PUT',
-                    headers: { 'Content-Type':'application/json' },
-                    body:    JSON.stringify(clean)
+                const resp = await fetch(`/api/patients/${clean.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(clean)
                 });
+
                 if (!resp.ok) throw new Error("Server rejected update");
-            } catch (err) {
-                console.warn("Remote save failed:", err);
-                alert("Saved locally, but failed to update server.");
+
+                // Refresh patient data
+                loadPatients();
+                document.getElementById('editModal').classList.add('hidden');
+            }   catch (err) {
+                console.warn("Update failed:", err);
+                alert("Failed to update patient record.");
             }
 
             patientsData[idx] = clean;
