@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Patient Records</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="auth.js" defer></script>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
@@ -124,83 +125,6 @@
     </div>
 
     <script>
-        let hospitalUsers = [];
-
-        window.onload = function () {
-            // Fetch hospital user data from backend
-            fetch('http://localhost:3333/api/hospital-users')
-                .then(res => res.json())
-                .then(data => {
-                    hospitalUsers = data;
-
-                    const isAuthenticated = sessionStorage.getItem("authenticated");
-                    const role = sessionStorage.getItem("access_level");
-
-                    if (isAuthenticated === "true" && role) {
-                        document.getElementById("overlay").style.display = "none";
-                        handleRoleBasedUI(role);
-                    }
-                })
-                .catch(err => {
-                    console.error("Error loading hospital users:", err);
-                    document.getElementById("error-msg").textContent = "⚠ Failed to load hospital IDs.";
-                });
-        };
-
-        document.getElementById("entry-form").addEventListener("submit", function (e) {
-            e.preventDefault();
-
-            const input = document.getElementById("code-input").value.trim().toUpperCase();
-
-            // Match entered ID against list
-            const matchedUser = hospitalUsers.find(user => user.hospital_id.toUpperCase() === input);
-
-            if (matchedUser) {
-                sessionStorage.setItem("authenticated", "true");
-                sessionStorage.setItem("access_level", matchedUser.access_level);
-
-                document.getElementById("overlay").style.display = "none";
-
-                handleRoleBasedUI(matchedUser.access_level);
-            } else {
-                document.getElementById("error-msg").textContent = "❌ Invalid hospital ID. Try again.";
-                document.getElementById("code-input").value = "";
-            }
-        });
-
-        // Handle role-specific logic
-        function handleRoleBasedUI(role) {
-            console.log(`Access Level: ${role}`);
-
-            if (role === "admin") {
-                document.body.classList.add("admin");
-                // Show admin-only sections
-
-                const adminSections = document.querySelectorAll('.admin-only');
-                adminSections.forEach(el => el.style.display = 'block');
-            } else if (role === "employee") {
-                document.body.classList.add("employee");
-                // Show employee-only sections
-
-                const employeeSections = document.querySelectorAll('.employee-only');
-                employeeSections.forEach(el => el.style.display = 'block');
-            }
-        }
-
-        // Toggle password visibility
-        function toggleVisibility() {
-            const input = document.getElementById("code-input");
-            const icon = document.getElementById("toggle-visibility");
-
-            if (input.type === "password") {
-                input.type = "text";
-                icon.textContent = "visibility_off";
-            } else {
-                input.type = "password";
-                icon.textContent = "visibility";
-            }
-        }
-
         // View Toggle
         const toggleBtn = document.getElementById('toggleViewBtn');
         const gridContainer = document.getElementById('grid-container');
@@ -542,7 +466,6 @@
             text
           });
 
-          // ✅ persist to localStorage
           localStorage.setItem('patientDataStore', JSON.stringify(patientDataStore));
 
           renderSavedEntries(patientId, section);
@@ -728,7 +651,11 @@
             try {
                 const resp = await fetch(`/api/patients/${clean.id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': sessionStorage.getItem('user_id') || 'unknown',
+                        'X-User-Name': sessionStorage.getItem('user_name') || 'Unknown User'
+                    },
                     body: JSON.stringify(clean)
                 });
 

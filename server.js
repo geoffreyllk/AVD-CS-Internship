@@ -83,60 +83,98 @@ app.get('/api/patients', (req, res) => {
   });
 });
 
+// Helper function to log patient updates
+function logPatientUpdate(userId, userName, patientId, field, oldValue, newValue) {
+  const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+  const query = `
+    INSERT INTO audit_logs (user_id, user_name, patient_id, action, field, old_value, new_value, timestamp)
+    VALUES (?, ?, ?, 'UPDATE', ?, ?, ?, ?)
+  `;
+
+  const values = [userId, userName, patientId, field, oldValue, newValue, timestamp];
+
+  patientDB.query(query, values, (err) => {
+    if (err) {
+      console.error('Failed to log update:', err);
+    }
+  });
+}
+
 // Update patient
 app.put('/api/patients/:id', (req, res) => {
   const patientId = req.params.id;
-  const updateData = {
-    name: req.body.name,
-    age: req.body.age,
-    gender: req.body.gender,
-    heart_rate: req.body.heartRate,
-    pulse_rate: req.body.pulseRate,
-    spo2: req.body.spo2,
-    temp_celsius: req.body.temperature?.celsius,
-    temp_fahrenheit: req.body.temperature?.fahrenheit,
-    bp_systolic: req.body.bloodPressure?.systolic,
-    bp_diastolic: req.body.bloodPressure?.diastolic,
-    last_updated: new Date().toISOString().slice(0, 19).replace('T', ' ')
-  };
+  const userId = req.headers['x-user-id'] || 'unknown';
+  const userName = req.headers['x-user-name'] || 'Unknown User';
 
-  patientDB.query(
-    'UPDATE patients SET ? WHERE id = ?',
-    [updateData, patientId],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: 'Update failed' });
-      if (result.affectedRows === 0) return res.status(404).json({ error: 'Patient not found' });
+  // First, get the current patient data to compare with new values
+  patientDB.query('SELECT * FROM patients WHERE id = ?', [patientId], (err, results) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    if (results.length === 0) return res.status(404).json({ error: 'Patient not found' });
 
-      // Log changes to audit table
-      const changes = Object.keys(req.body)
-        .filter(key => key !== 'lastUpdated')
-        .map(key => ({
-          user_id: 'CURRENT_USER', // Will implement in next step
-          user_name: 'CURRENT_USER_NAME',
-          patient_id: patientId,
-          action: 'UPDATE',
-          field: key,
-          old_value: 'PREV_VALUE', // Need previous values
-          new_value: req.body[key]
-        }));
+    const oldPatient = results[0];
+    const updateData = {
+      name: req.body.name,
+      age: req.body.age,
+      gender: req.body.gender,
+      heart_rate: req.body.heartRate,
+      pulse_rate: req.body.pulseRate,
+      spo2: req.body.spo2,
+      temp_celsius: req.body.temperature?.celsius,
+      temp_fahrenheit: req.body.temperature?.fahrenheit,
+      bp_systolic: req.body.bloodPressure?.systolic,
+      bp_diastolic: req.body.bloodPressure?.diastolic,
+      last_updated: new Date().toISOString().slice(0, 19).replace('T', ' ')
+    };
 
-      if (changes.length > 0) {
-        patientDB.query('INSERT INTO audit_logs SET ?', changes);
+    patientDB.query(
+      'UPDATE patients SET ? WHERE id = ?',
+      [updateData, patientId],
+      (err, result) => {
+        if (err) return res.status(500).json({ error: 'Update failed' });
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Patient not found' });
+
+        const changes = [];
+
+        // mapping of db field -> display name
+        const fieldMappings = {
+          name: 'Name',
+          age: 'Age',
+          gender: 'Gender',
+          heart_rate: 'Heart Rate',
+          pulse_rate: 'Pulse Rate',
+          spo2: 'SpO2',
+          temp_celsius: 'Temperature (C)',
+          temp_fahrenheit: 'Temperature (F)',
+          bp_systolic: 'BP Systolic',
+          bp_diastolic: 'BP Diastolic'
+        };
+
+        // compare old vs new for each field
+        for (const field in fieldMappings) {
+          const oldValue = oldPatient[field];
+          const newValue = updateData[field];
+
+          if (newValue !== undefined && oldValue !== newValue) {
+            changes.push({
+              field: fieldMappings[field],
+              old: oldValue,
+              new: newValue
+            });
+
+            // log immediately
+            logPatientUpdate(userId, userName, patientId, fieldMappings[field], oldValue, newValue);
+          }
+        }
+
+        res.json({ success: true, changes: changes.length });
       }
-
-      res.json({ success: true });
-    }
-  );
+    );
+  });
 });
 
 // GET /api/audit-logs
 app.get('/api/audit-logs', (req, res) => {
-    const conn = typeof db !== 'undefined' ? db : (typeof patientDB !== 'undefined' ? patientDB : null);
-    if (!conn) {
-        console.error('No DB connection variable found. Expected `db` or `patientDB`.');
-        return res.status(500).json({ error: 'Server misconfiguration: no DB connection' });
-    }
-
     const sql = `
         SELECT
             a.user_id      AS userId,
@@ -155,14 +193,13 @@ app.get('/api/audit-logs', (req, res) => {
         LIMIT 1000
     `;
 
-    conn.query(sql, (err, results) => {
+    patientDB.query(sql, (err, results) => {
         if (err) {
-            console.error('Database error in /api/audit-logs:', err);   // <--- FULL error printed to server console
+            console.error('Database error in /api/audit-logs:', err);
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
 
         // Group rows that belong to the same logical change by (user, patient, date, time)
-        // This groups multiple field edits that share the same timestamp into one entry.
         const grouped = results.reduce((acc, row) => {
             const key = `${row.userId}||${row.patientId}||${row.date}||${row.time}`;
             if (!acc[key]) {
@@ -188,7 +225,6 @@ app.get('/api/audit-logs', (req, res) => {
         return res.json(payload);
     });
 });
-
 
 // Start server
 const PORT = 3333;
