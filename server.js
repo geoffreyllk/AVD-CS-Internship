@@ -42,17 +42,13 @@ patientDB.getConnection((err, connection) => {
   }
 });
 
-// ===== HOSPITAL DATABASE ENDPOINTS =====
-
 // Get hospital users for authentication
 app.get('/api/hospital-users', (req, res) => {
-  hospitalDB.query('SELECT hospital_id, access_level FROM hospital_users', (err, results) => {
+  hospitalDB.query('SELECT hospital_id, name, access_level FROM hospital_users', (err, results) => {
     if (err) return res.status(500).json({ error: 'Failed to fetch hospital users' });
     res.json(results);
   });
 });
-
-// ===== PATIENT DATABASE ENDPOINTS =====
 
 // Get all patients
 app.get('/api/patients', (req, res) => {
@@ -85,8 +81,16 @@ app.get('/api/patients', (req, res) => {
 
 // Helper function to log patient updates
 function logPatientUpdate(userId, userName, patientId, field, oldValue, newValue) {
-  const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  if (field === 'Temperature (C)' || field === 'Temperature (F)') {
+      oldValue = oldValue !== null ? parseFloat(oldValue).toFixed(1) : oldValue;
+      newValue = newValue !== null ? parseFloat(newValue).toFixed(1) : newValue;
 
+      // Don't log if values are the same
+      if (oldValue === newValue) {
+        return;
+      }
+  }
+  const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
   const query = `
     INSERT INTO audit_logs (user_id, user_name, patient_id, action, field, old_value, new_value, timestamp)
     VALUES (?, ?, ?, 'UPDATE', ?, ?, ?, ?)
@@ -107,7 +111,7 @@ app.put('/api/patients/:id', (req, res) => {
   const userId = req.headers['x-user-id'] || 'unknown';
   const userName = req.headers['x-user-name'] || 'Unknown User';
 
-  // First, get the current patient data to compare with new values
+  // get the current patient data to compare with new values
   patientDB.query('SELECT * FROM patients WHERE id = ?', [patientId], (err, results) => {
     if (err) return res.status(500).json({ error: 'Database error' });
     if (results.length === 0) return res.status(404).json({ error: 'Patient not found' });

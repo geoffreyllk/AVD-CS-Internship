@@ -1,8 +1,7 @@
--- Create database and tables
+DROP DATABASE patient_db;
 CREATE DATABASE IF NOT EXISTS patient_db;
 USE patient_db;
 
--- Patients Table
 CREATE TABLE IF NOT EXISTS patients (
     id VARCHAR(20) PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
@@ -11,8 +10,8 @@ CREATE TABLE IF NOT EXISTS patients (
     heart_rate INT,
     pulse_rate INT,
     spo2 INT,
-    temp_celsius DECIMAL(5,2),
-    temp_fahrenheit DECIMAL(5,2),
+    temp_celsius DECIMAL(5,1),
+    temp_fahrenheit DECIMAL(5,1),
     bp_systolic INT,
     bp_diastolic INT,
     last_updated DATETIME DEFAULT CURRENT_TIMESTAMP

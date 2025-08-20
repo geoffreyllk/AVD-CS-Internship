@@ -600,6 +600,16 @@
           });
         }
 
+        // Add temperature conversion functions
+        function celsiusToFahrenheit(celsius) {
+          return (celsius * 9/5) + 32;
+        }
+
+        function fahrenheitToCelsius(fahrenheit) {
+          return (fahrenheit - 32) * 5/9;
+        }
+
+        // Update the showEditModal function to handle temperature conversion
         function showEditModal(p) {
             document.getElementById('editId').value = p.id;
             document.getElementById('editName').value = p.name;
@@ -612,6 +622,22 @@
             document.getElementById('editTempF').value = p.temperature.fahrenheit;
             document.getElementById('editSys').value = p.bloodPressure.systolic;
             document.getElementById('editDia').value = p.bloodPressure.diastolic;
+
+            // Add event listeners for temperature conversion
+            document.getElementById('editTempC').addEventListener('input', function() {
+                if (this.value) {
+                    const celsius = parseFloat(this.value);
+                    document.getElementById('editTempF').value = celsiusToFahrenheit(celsius).toFixed(1);
+                }
+            });
+
+            document.getElementById('editTempF').addEventListener('input', function() {
+                if (this.value) {
+                    const fahrenheit = parseFloat(this.value);
+                    document.getElementById('editTempC').value = fahrenheitToCelsius(fahrenheit).toFixed(1);
+                }
+            });
+
             document.getElementById('editModal').classList.remove('hidden');
         }
 
