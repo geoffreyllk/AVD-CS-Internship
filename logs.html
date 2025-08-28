@@ -11,361 +11,460 @@
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
-<header class="bg-blue-700 text-white p-4 flex justify-between items-center shadow">
-    <h1 class="text-2xl font-bold">Patient Records</h1>
-    <img src="images/logo-placeholder.jpg" alt="Logo" class="h-10 w-auto">
-</header>
+    <header class="bg-blue-700 text-white p-4 flex justify-between items-center shadow">
+        <h1 class="text-2xl font-bold">Patient Records</h1>
+        <img src="images/logo-placeholder.jpg" alt="Logo" class="h-10 w-auto">
+    </header>
 
-<nav class="bg-blue-600 text-white px-4 py-3 shadow">
-    <ul class="flex space-x-4">
-        <li><a href="index.html" class="hover:underline">Home</a></li>
-        <li><a href="logs.html" class="hover:underline font-semibold">Logs</a></li>
-    </ul>
-</nav>
+    <nav class="bg-blue-600 text-white px-4 py-3 shadow">
+        <ul class="flex space-x-4">
+            <li><a href="index.html" class="hover:underline">Home</a></li>
+            <li><a href="logs.html" class="hover:underline font-semibold">Logs</a></li>
+        </ul>
+    </nav>
 
-<main class="flex-grow p-4">
-    <div class="max-w-7xl mx-auto bg-white shadow rounded p-4">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-            <div class="flex items-center gap-4 w-full md:w-2/3">
-                <h2 class="text-lg font-semibold uppercase">Log of Events</h2>
-                <div class="relative w-full max-w-xs">
-                    <input id="searchInput"
-                           type="text"
-                           placeholder="Search User or Patient…"
-                           class="w-full border border-gray-300 rounded px-3 py-2 pr-8 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                    <button id="clearSearch"
-                            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 text-lg">
-                        &times;
-                    </button>
+    <main class="flex-grow p-4">
+        <div class="max-w-7xl mx-auto bg-white shadow rounded p-4">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                <div class="flex items-center gap-4 w-full md:w-2/3">
+                    <h2 class="text-lg font-semibold uppercase">Log of Events</h2>
+                    <div class="relative w-full max-w-xs">
+                        <input id="searchInput"
+                               type="text"
+                               placeholder="Search User or Patient…"
+                               class="w-full border border-gray-300 rounded px-3 py-2 pr-8 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                        <button id="clearSearch"
+                                class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 text-lg">
+                            &times;
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <select id="sortSelect" class="border border-gray-300 rounded px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="recent">Most Recent</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="user-asc">User Name A–Z</option>
+                        <option value="user-desc">User Name Z–A</option>
+                    </select>
+                    <select id="dateFilter" class="border border-gray-300 rounded px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="all">All Time</option>
+                        <option value="7">Last 7 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                    </select>
                 </div>
             </div>
-            <div class="flex items-center gap-4 w-full md:w-auto">
-                <select id="sortSelect" class="border border-gray-300 rounded px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-                    <option value="recent">Most Recent</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="user-asc">User Name A–Z</option>
-                    <option value="user-desc">User Name Z–A</option>
-                </select>
-                <select id="dateFilter" class="border border-gray-300 rounded px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-                    <option value="all">All Time</option>
-                    <option value="7">Last 7 Days</option>
-                    <option value="30">Last 30 Days</option>
-                    <option value="90">Last 90 Days</option>
-                </select>
+
+            <!-- Logs Container -->
+            <div id="logsContainer" class="border rounded-lg overflow-hidden"></div>
+
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
+                <p class="mt-2 text-gray-600">Loading logs...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No logs found</h3>
+                <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filter</p>
             </div>
         </div>
+    </main>
 
-        <!-- Logs Container -->
-        <div id="logsContainer" class="border rounded-lg overflow-hidden"></div>
+    <footer class="text-center text-white text-xs sm:text-sm py-6 px-12 mt-8 bg-blue-700">
+        <p>Patient Records System © 2025</p>
+    </footer>
 
-        <!-- Loading Indicator -->
-        <div id="loadingIndicator" class="text-center py-8">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
-            <p class="mt-2 text-gray-600">Loading logs...</p>
-        </div>
+    <script>
+        // State management
+        let allLogs = [];
+        let filteredLogs = [];
+        let logsPerPage = 10; // now mutable from dropdown
+        let currentPage = 1;
 
-        <!-- Empty State -->
-        <div id="emptyState" class="hidden text-center py-12">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No logs found</h3>
-            <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filter</p>
-        </div>
-    </div>
-</main>
+        // DOM Elements
+        const logsContainer = document.getElementById('logsContainer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const emptyState = document.getElementById('emptyState');
+        const searchInput = document.getElementById('searchInput');
+        const clearSearch = document.getElementById('clearSearch');
+        const sortSelect = document.getElementById('sortSelect');
+        const dateFilter = document.getElementById('dateFilter');
 
-<footer class="text-center text-white text-xs sm:text-sm py-6 px-12 mt-8 bg-blue-700">
-    <p>Patient Records System © 2025</p>
-</footer>
+        // Fetch logs from server
+        async function fetchLogs() {
+            try {
+                showLoading();
+                const response = await fetch('/api/audit-logs');
 
-<script>
-    // State management
-    let allLogs = [];
-    let filteredLogs = [];
-    const logsPerPage = 15;
-    let currentPage = 1;
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
 
-    // DOM Elements
-    const logsContainer = document.getElementById('logsContainer');
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    const emptyState = document.getElementById('emptyState');
-    const searchInput = document.getElementById('searchInput');
-    const clearSearch = document.getElementById('clearSearch');
-    const sortSelect = document.getElementById('sortSelect');
-    const dateFilter = document.getElementById('dateFilter');
+                const data = await response.json();
+                allLogs = data;
 
-    // Fetch logs from server
-    async function fetchLogs() {
-        try {
-            showLoading();
-            const response = await fetch('/api/audit-logs');
+                // Apply any saved filters
+                applyFilters();
 
-            if (!response.ok) {
-                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+                showError('Failed to load logs. Please try again later.');
+            }
+        }
+
+        // Apply filters and search
+        function applyFilters() {
+            filteredLogs = [...allLogs];
+
+            // Apply search filter
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            if (searchTerm) {
+                filteredLogs = filteredLogs.filter(log =>
+                    log.userName.toLowerCase().includes(searchTerm) ||
+                    log.patientName.toLowerCase().includes(searchTerm)
+                );
             }
 
-            const data = await response.json();
-            allLogs = data;
+            // Apply date filter
+            const daysFilter = dateFilter.value;
+            if (daysFilter !== 'all') {
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - parseInt(daysFilter));
 
-            // Apply any saved filters
-            applyFilters();
-
-        } catch (error) {
-            console.error('Error fetching logs:', error);
-            showError('Failed to load logs. Please try again later.');
-        }
-    }
-
-    // Apply filters and search
-    function applyFilters() {
-        filteredLogs = [...allLogs];
-
-        // Apply search filter
-        const searchTerm = searchInput.value.trim().toLowerCase();
-        if (searchTerm) {
-            filteredLogs = filteredLogs.filter(log =>
-                log.userName.toLowerCase().includes(searchTerm) ||
-                log.patientName.toLowerCase().includes(searchTerm)
-            );
-        }
-
-        // Apply date filter
-        const daysFilter = dateFilter.value;
-        if (daysFilter !== 'all') {
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - parseInt(daysFilter));
-
-            filteredLogs = filteredLogs.filter(log => {
-                const logDate = parseLogDate(log.date, log.time);
-                return logDate >= cutoffDate;
-            });
-        }
-
-        // Apply sorting
-        const sortOption = sortSelect.value;
-        switch(sortOption) {
-            case 'recent':
-                filteredLogs.sort((a, b) => {
-                    const dateA = parseLogDate(a.date, a.time);
-                    const dateB = parseLogDate(b.date, b.time);
-                    return dateB - dateA;
+                filteredLogs = filteredLogs.filter(log => {
+                    const logDate = parseLogDate(log.date, log.time);
+                    return logDate >= cutoffDate;
                 });
-                break;
-            case 'oldest':
-                filteredLogs.sort((a, b) => {
-                    const dateA = parseLogDate(a.date, a.time);
-                    const dateB = parseLogDate(b.date, b.time);
-                    return dateA - dateB;
-                });
-                break;
-            case 'user-asc':
-                filteredLogs.sort((a, b) => a.userName.localeCompare(b.userName));
-                break;
-            case 'user-desc':
-                filteredLogs.sort((a, b) => b.userName.localeCompare(a.userName));
-                break;
+            }
+
+            // Apply sorting
+            const sortOption = sortSelect.value;
+            switch(sortOption) {
+                case 'recent':
+                    filteredLogs.sort((a, b) => {
+                        const dateA = parseLogDate(a.date, a.time);
+                        const dateB = parseLogDate(b.date, b.time);
+                        return dateB - dateA;
+                    });
+                    break;
+                case 'oldest':
+                    filteredLogs.sort((a, b) => {
+                        const dateA = parseLogDate(a.date, a.time);
+                        const dateB = parseLogDate(b.date, b.time);
+                        return dateA - dateB;
+                    });
+                    break;
+                case 'user-asc':
+                    filteredLogs.sort((a, b) => a.userName.localeCompare(b.userName));
+                    break;
+                case 'user-desc':
+                    filteredLogs.sort((a, b) => b.userName.localeCompare(a.userName));
+                    break;
+            }
+
+            // Ensure currentPage is within range after filtering
+            const totalPages = Math.max(1, Math.ceil(filteredLogs.length / logsPerPage));
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            renderLogs();
         }
 
-        renderLogs();
-    }
+        // Parse date from log format (MM/DD/YY)
+        function parseLogDate(dateStr, timeStr) {
+            const [month, day, yearShort] = dateStr.split('/');
+            const year = 2000 + parseInt(yearShort);
+            return new Date(year, parseInt(month) - 1, parseInt(day));
+        }
 
-    // Parse date from log format (MM/DD/YY)
-    function parseLogDate(dateStr, timeStr) {
-        const [month, day, yearShort] = dateStr.split('/');
-        const year = 2000 + parseInt(yearShort);
-        return new Date(year, parseInt(month) - 1, parseInt(day));
-    }
+        // Format date for display
+        function formatDate(dateStr, timeStr) {
+            const date = parseLogDate(dateStr, timeStr);
+            return date.toLocaleDateString() + ' ' + timeStr;
+        }
 
-    // Format date for display
-    function formatDate(dateStr, timeStr) {
-        const date = parseLogDate(dateStr, timeStr);
-        return date.toLocaleDateString() + ' ' + timeStr;
-    }
+        // Render logs to the page
+        function renderLogs() {
+            hideLoading();
 
-    // Render logs to the page
-    function renderLogs() {
-        hideLoading();
+            // Always calculate totalPages with a minimum of 1 so pagination still shows
+            const totalPages = Math.max(1, Math.ceil(filteredLogs.length / logsPerPage));
 
-        if (filteredLogs.length === 0) {
-            emptyState.classList.remove('hidden');
+            // Clamp current page
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            if (filteredLogs.length === 0) {
+                emptyState.classList.remove('hidden');
+                logsContainer.innerHTML = '';
+                // Still render pagination (even when there are 0 logs)
+                renderPagination(totalPages);
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            const startIndex = (currentPage - 1) * logsPerPage;
+            const endIndex = startIndex + logsPerPage;
+            const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+
             logsContainer.innerHTML = '';
-            return;
-        }
 
-        emptyState.classList.add('hidden');
+            paginatedLogs.forEach(log => {
+                const logElement = document.createElement('div');
+                logElement.className = 'border-b';
 
-        const startIndex = (currentPage - 1) * logsPerPage;
-        const endIndex = startIndex + logsPerPage;
-        const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
-
-        logsContainer.innerHTML = '';
-
-        paginatedLogs.forEach(log => {
-            const logElement = document.createElement('div');
-            logElement.className = 'border-b';
-
-            logElement.innerHTML = `
-                <div class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span class="text-blue-800 font-medium">${log.userName.charAt(0)}</span>
-                            </div>
-                            <div class="ml-4">
-                                <div class="text-sm font-medium text-gray-900">${log.userName} (ID: ${log.userId})</div>
-                                <div class="text-sm text-gray-500">Patient: ${log.patientName}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="ml-6 flex-shrink-0">
-                        <div class="text-sm text-gray-500">${log.date} ${log.time}</div>
-                        <div class="mt-1 text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">${log.edits.length} changes</div>
-                    </div>
-                    <div class="ml-6 flex-shrink-0">
-                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
-                </div>
-                <div class="log-details bg-gray-50 px-4 pb-4 hidden">
-                    <div class="pt-2 pb-3 text-sm font-medium text-gray-700">Changes made:</div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                        ${log.edits.map(edit => `
-                            <div class="bg-white border rounded p-3 text-sm">
-                                <div class="font-medium text-gray-800">${edit.field}</div>
-                                <div class="mt-1 flex items-center">
-                                    <span class="text-gray-500 line-through mr-2">${edit.from || 'N/A'}</span>
-                                    <span class="text-green-600 font-medium">${edit.to || 'N/A'}</span>
+                logElement.innerHTML = `
+                    <div class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span class="text-blue-800 font-medium">${log.userName.charAt(0)}</span>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">${log.userName} (ID: ${log.userId})</div>
+                                    <div class="text-sm text-gray-500">Patient: ${log.patientName}</div>
                                 </div>
                             </div>
-                        `).join('')}
+                        </div>
+                        <div class="ml-6 flex-shrink-0">
+                            <div class="text-sm text-gray-500">${log.date} ${log.time}</div>
+                            <div class="mt-1 text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">${log.edits.length} changes</div>
+                        </div>
+                        <div class="ml-6 flex-shrink-0">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
                     </div>
-                </div>
-            `;
+                    <div class="log-details bg-gray-50 px-4 pb-4 hidden">
+                        <div class="pt-2 pb-3 text-sm font-medium text-gray-700">Changes made:</div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                            ${log.edits.map(edit => `
+                                <div class="bg-white border rounded p-3 text-sm">
+                                    <div class="font-medium text-gray-800">${edit.field}</div>
+                                    <div class="mt-1 flex items-center">
+                                        <span class="text-gray-500 line-through mr-2">${edit.from || 'N/A'}</span>
+                                        <span class="text-green-600 font-medium">${edit.to || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
 
-            // Toggle details on click
-            const header = logElement.querySelector('.cursor-pointer');
-            const details = logElement.querySelector('.log-details');
-            const arrow = logElement.querySelector('svg');
+                // Toggle details on click
+                const header = logElement.querySelector('.cursor-pointer');
+                const details = logElement.querySelector('.log-details');
+                const arrow = logElement.querySelector('svg');
 
-            header.addEventListener('click', () => {
-                details.classList.toggle('hidden');
-                arrow.classList.toggle('transform');
-                arrow.classList.toggle('rotate-180');
+                header.addEventListener('click', () => {
+                    details.classList.toggle('hidden');
+                    arrow.classList.toggle('transform');
+                    arrow.classList.toggle('rotate-180');
+                });
+
+                logsContainer.appendChild(logElement);
             });
 
-            logsContainer.appendChild(logElement);
-        });
-
-        renderPagination();
-    }
-
-    // Render pagination controls
-    function renderPagination() {
-        const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
-
-        if (totalPages <= 1) {
-            return;
+            renderPagination(totalPages);
         }
 
-        const paginationContainer = document.createElement('div');
-        paginationContainer.className = 'flex justify-between items-center px-4 py-3 bg-white border-t';
+        // Render pagination controls (always render)
+        function renderPagination(totalPages) {
+            const existing = logsContainer.querySelector('.pagination-container');
+            if (existing) existing.remove();
 
-        // Previous button
-        const prevButton = document.createElement('button');
-        prevButton.textContent = 'Previous';
-        prevButton.className = 'px-4 py-2 text-sm font-medium text-blue-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed';
-        prevButton.disabled = currentPage === 1;
-        prevButton.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
+            const paginationContainer = document.createElement('div');
+            paginationContainer.className = 'pagination-container flex justify-between items-center px-4 py-3 bg-white border-t';
+
+            // LEFT: rows per page
+            const left = document.createElement('div');
+            left.className = 'flex items-center gap-2';
+            const label = document.createElement('div');
+            label.className = 'text-sm text-gray-700';
+            label.textContent = 'Show rows per page';
+            const select = document.createElement('select');
+            select.className = 'border border-gray-300 rounded px-2 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400';
+            [5,10,15,25,50].forEach(n => {
+                const opt = document.createElement('option');
+                opt.value = n;
+                opt.textContent = n;
+                if (n === logsPerPage) opt.selected = true;
+                select.appendChild(opt);
+            });
+            select.addEventListener('change', (e) => {
+                logsPerPage = parseInt(e.target.value, 10);
+                currentPage = 1;
+                renderLogs();
+            });
+            left.appendChild(label);
+            left.appendChild(select);
+
+            // RIGHT: page controls
+            const right = document.createElement('div');
+            right.className = 'flex items-center gap-3';
+
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'px-2 py-1 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed';
+            prevBtn.innerHTML = `<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>`;
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) { currentPage--; renderLogs(); }
+            });
+
+            const pageWrapper = document.createElement('div');
+            pageWrapper.className = 'flex items-center gap-2';
+
+            const pageSpan = document.createElement('span');
+            pageSpan.className = 'text-sm text-gray-700 cursor-text select-none px-2 py-0.5 rounded';
+            pageSpan.textContent = currentPage;
+
+            // page input
+            const pageInput = document.createElement('input');
+            pageInput.type = 'number';
+            pageInput.min = 1;
+            pageInput.max = totalPages;
+            pageInput.value = String(currentPage);
+
+            pageInput.className = 'text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full text-left';
+            pageInput.style.display = 'none';
+            pageInput.style.minWidth = '3.6rem';
+            pageInput.style.boxSizing = 'border-box';
+
+            // helper to size width so digits aren't hidden behind spinner
+            function computeWidthForValue(val) {
+                const len = Math.max(1, String(val).length);
+                return (len + 3) + 'ch'; // +3ch buffer for spinner + padding
+            }
+
+            // show input when span clicked
+            pageSpan.addEventListener('click', () => {
+                 pageSpan.style.display = 'none';
+                pageInput.style.display = 'inline-block';
+                pageInput.style.width = computeWidthForValue(currentPage);
+                requestAnimationFrame(() => { pageInput.focus(); pageInput.select(); });
+            });
+
+            // resize while typing
+            pageInput.addEventListener('input', () => {
+                pageInput.style.width = computeWidthForValue(pageInput.value || '');
+            });
+
+            // commit / cancel
+            function commitPageInput() {
+                let v = parseInt(String(pageInput.value).replace(/\D/g,''), 10);
+                if (Number.isNaN(v)) v = 1;
+                v = Math.max(1, Math.min(totalPages, v));
+                currentPage = v;
+                pageSpan.textContent = currentPage;
+                pageInput.value = String(currentPage);
+                pageInput.style.display = 'none';
+                pageSpan.style.display = '';
                 renderLogs();
             }
-        });
-
-        // Page info
-        const pageInfo = document.createElement('div');
-        pageInfo.className = 'text-sm text-gray-700';
-        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-
-        // Next button
-        const nextButton = document.createElement('button');
-        nextButton.textContent = 'Next';
-        nextButton.className = 'px-4 py-2 text-sm font-medium text-blue-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed';
-        nextButton.disabled = currentPage === totalPages;
-        nextButton.addEventListener('click', () => {
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderLogs();
+            function cancelPageInput() {
+                pageInput.value = String(currentPage);
+                pageInput.style.width = computeWidthForValue(currentPage);
+                pageInput.style.display = 'none';
+                 pageSpan.style.display = '';
             }
-        });
 
-        paginationContainer.appendChild(prevButton);
-        paginationContainer.appendChild(pageInfo);
-        paginationContainer.appendChild(nextButton);
+            pageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') commitPageInput();
+                if (e.key === 'Escape') cancelPageInput();
+            });
+            pageInput.addEventListener('blur', () => commitPageInput());
 
-        logsContainer.appendChild(paginationContainer);
-    }
+            const pageOf = document.createElement('div');
+            pageOf.className = 'text-sm text-gray-700';
+            pageOf.textContent = `of ${totalPages}`;
+
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'px-2 py-1 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed';
+            nextBtn.innerHTML = `<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>`;
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) { currentPage++; renderLogs(); }
+            });
+
+            // assemble
+            pageWrapper.appendChild(pageSpan);
+            pageWrapper.appendChild(pageInput);
+            pageWrapper.appendChild(pageOf);
+
+            right.appendChild(prevBtn);
+            right.appendChild(pageWrapper);
+            right.appendChild(nextBtn);
+
+            paginationContainer.appendChild(left);
+            paginationContainer.appendChild(right);
+            logsContainer.appendChild(paginationContainer);
+        }
 
     // Show loading state
-    function showLoading() {
-        loadingIndicator.classList.remove('hidden');
-        emptyState.classList.add('hidden');
-    }
+        function showLoading() {
+            loadingIndicator.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+        }
 
-    // Hide loading state
-    function hideLoading() {
-        loadingIndicator.classList.add('hidden');
-    }
+        // Hide loading state
+        function hideLoading() {
+            loadingIndicator.classList.add('hidden');
+        }
 
-    // Show error message
-    function showError(message) {
-        hideLoading();
-        logsContainer.innerHTML = `
-            <div class="text-center py-12 text-red-600">
-                <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h3 class="mt-2 text-sm font-medium">Error Loading Logs</h3>
-                <p class="mt-1 text-sm">${message}</p>
-                <button onclick="fetchLogs()" class="mt-4 px-4 py-2 text-sm font-medium text-blue-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                    Try Again
-                </button>
-            </div>
-        `;
-    }
+        // Show error message
+        function showError(message) {
+            hideLoading();
+            logsContainer.innerHTML = `
+                <div class="text-center py-12 text-red-600">
+                    <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium">Error Loading Logs</h3>
+                    <p class="mt-1 text-sm">${message}</p>
+                    <button onclick="fetchLogs()" class="mt-4 px-4 py-2 text-sm font-medium text-blue-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        Try Again
+                    </button>
+                </div>
+            `;
+        }
 
-    // Initialize the page
-    function init() {
-        // Set up event listeners
-        searchInput.addEventListener('input', () => {
-            currentPage = 1;
-            applyFilters();
-        });
+        // Initialize the page
+        function init() {
+            // Set up event listeners
+            searchInput.addEventListener('input', () => {
+                currentPage = 1;
+                applyFilters();
+            });
 
-        clearSearch.addEventListener('click', () => {
-            searchInput.value = '';
-            currentPage = 1;
-            applyFilters();
-        });
+            clearSearch.addEventListener('click', () => {
+                searchInput.value = '';
+                currentPage = 1;
+                applyFilters();
+            });
 
-        sortSelect.addEventListener('change', () => {
-            currentPage = 1;
-            applyFilters();
-        });
+            sortSelect.addEventListener('change', () => {
+                currentPage = 1;
+                applyFilters();
+            });
 
-        dateFilter.addEventListener('change', () => {
-            currentPage = 1;
-            applyFilters();
-        });
+            dateFilter.addEventListener('change', () => {
+                currentPage = 1;
+                applyFilters();
+            });
 
-        // Load initial data
-        fetchLogs();
-    }
+            // Load initial data
+            fetchLogs();
+        }
 
-    // Start when page is loaded
-    document.addEventListener('DOMContentLoaded', init);
-</script>
+        // Start when page is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
 </body>
 </html>
