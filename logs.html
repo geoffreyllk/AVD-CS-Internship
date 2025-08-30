@@ -5,8 +5,35 @@
     <title>Patient Edit Logs</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+
+        @media (min-width: 400px) and (max-width: 480px) {
+            .log-time {
+                flex-direction: column !important;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .log-header {
+                flex-direction: column !important;
+                text-align: center;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 450px) {
+            .pagination-container {
+                flex-direction: column !important;
+                gap: 0.5rem;
+            }
+        }
+
         .log-details {
             transition: all 0.3s ease;
+        }
+
+        #downloadModal {
+            transition: opacity 0.3s ease;
         }
     </style>
 </head>
@@ -27,31 +54,30 @@
         <div class="max-w-7xl mx-auto bg-white shadow rounded p-4">
             <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <div class="flex items-center gap-4 w-full md:w-2/3">
-                    <h2 class="text-lg font-semibold uppercase">Log of Events</h2>
+                    <h2 class="text-lg font-semibold uppercase whitespace-nowrap">Log of Events</h2>
                     <div class="relative w-full max-w-xs">
-                        <input id="searchInput"
-                               type="text"
-                               placeholder="Search User or Patient…"
-                               class="w-full border border-gray-300 rounded px-3 py-2 pr-8 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                        <button id="clearSearch"
-                                class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 text-lg">
-                            &times;
-                        </button>
+                        <input id="searchInput" type="text" placeholder="Search User or Patient…" class="w-full border border-gray-300 rounded px-3 py-2 pr-8 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                        <button id="clearSearch" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 text-lg"> &times; </button>
                     </div>
                 </div>
-                <div class="flex items-center gap-4 w-full md:w-auto">
-                    <select id="sortSelect" class="border border-gray-300 rounded px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <div class="flex flex-wrap md:flex-nowrap items-center gap-4 w-full md:w-auto">
+                    <select id="sortSelect" class="border border-gray-300 rounded px-2 sm:px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
                         <option value="recent">Most Recent</option>
                         <option value="oldest">Oldest First</option>
                         <option value="user-asc">User Name A–Z</option>
                         <option value="user-desc">User Name Z–A</option>
                     </select>
-                    <select id="dateFilter" class="border border-gray-300 rounded px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    <select id="dateFilter" class="border border-gray-300 rounded px-2 sm:px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
                         <option value="all">All Time</option>
                         <option value="7">Last 7 Days</option>
                         <option value="30">Last 30 Days</option>
                         <option value="90">Last 90 Days</option>
                     </select>
+                    <button id="downloadCsv" class="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700" title="Download CSV">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -71,6 +97,35 @@
                 </svg>
                 <h3 class="mt-2 text-sm font-medium text-gray-900">No logs found</h3>
                 <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filter</p>
+            </div>
+        </div>
+
+        <!-- Download Options Modal -->
+        <div id="downloadModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden z-50">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 m-6">
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">Export Data</h3>
+                    <p class="text-sm text-gray-500 mt-1">
+                        Select how you want to download your data as a CSV file.
+                    </p>
+                </div>
+                <div class="space-y-3">
+                    <button id="downloadCurrentPage"
+                            class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg border border-gray-300 text-gray-700 hover:text-gray-800 hover:bg-gray-100 focus:ring-2 focus:ring-gray-300">
+                        <span>Current Page Only</span>
+                    </button>
+
+                    <button id="downloadAllPages"
+                            class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500">
+                        <span>All Pages (Full Dataset)</span>
+                    </button>
+                </div>
+                <div class="flex justify-end mt-6">
+                    <button id="closeDownloadModal"
+                            class="text-sm font-medium text-gray-500 hover:text-gray-700">
+                        Cancel
+                    </button>
+                </div>
             </div>
         </div>
     </main>
@@ -220,7 +275,7 @@
                 logElement.className = 'border-b';
 
                 logElement.innerHTML = `
-                    <div class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50">
+                    <div class="log-header flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -233,7 +288,10 @@
                             </div>
                         </div>
                         <div class="ml-6 flex-shrink-0">
-                            <div class="text-sm text-gray-500">${log.date} ${log.time}</div>
+                             <div class="log-time flex flex-row text-sm text-gray-500">
+                                <span>${log.date}</span>
+                                <span class="ml-1">${log.time}</span>
+                             </div>
                             <div class="mt-1 text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">${log.edits.length} changes</div>
                         </div>
                         <div class="ml-6 flex-shrink-0">
@@ -281,7 +339,7 @@
             if (existing) existing.remove();
 
             const paginationContainer = document.createElement('div');
-            paginationContainer.className = 'pagination-container flex justify-between items-center px-4 py-3 bg-white border-t';
+            paginationContainer.className = 'pagination-container flex flex-row justify-between items-center px-4 py-2 sm:py-3 bg-white border-t';
 
             // LEFT: rows per page
             const left = document.createElement('div');
@@ -308,7 +366,7 @@
 
             // RIGHT: page controls
             const right = document.createElement('div');
-            right.className = 'flex items-center gap-3';
+            right.className = 'flex items-center gap-2 sm:gap-3';
 
             const prevBtn = document.createElement('button');
             prevBtn.className = 'px-2 py-1 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -322,7 +380,7 @@
             pageWrapper.className = 'flex items-center gap-2';
 
             const pageSpan = document.createElement('span');
-            pageSpan.className = 'text-sm text-gray-700 cursor-text select-none px-2 py-0.5 rounded';
+            pageSpan.className = 'text-sm text-gray-700 cursor-text select-none px-2 py-1 border border-gray-300 rounded bg-gray-50 hover:bg-white';
             pageSpan.textContent = currentPage;
 
             // page input
@@ -345,7 +403,7 @@
 
             // show input when span clicked
             pageSpan.addEventListener('click', () => {
-                 pageSpan.style.display = 'none';
+                pageSpan.style.display = 'none';
                 pageInput.style.display = 'inline-block';
                 pageInput.style.width = computeWidthForValue(currentPage);
                 requestAnimationFrame(() => { pageInput.focus(); pageInput.select(); });
@@ -407,7 +465,7 @@
             logsContainer.appendChild(paginationContainer);
         }
 
-    // Show loading state
+        // Show loading state
         function showLoading() {
             loadingIndicator.classList.remove('hidden');
             emptyState.classList.add('hidden');
@@ -435,6 +493,81 @@
             `;
         }
 
+        // Show download options modal
+        function showDownloadOptions() {
+            if (filteredLogs.length === 0) {
+                alert('No logs to download');
+                return;
+            }
+            document.getElementById('downloadModal').classList.remove('hidden');
+        }
+
+        // Download CSV function with scope parameter
+        function downloadCSV(scope) {
+            let logsToDownload;
+            let filename;
+
+            if (scope === 'current') {
+                const startIndex = (currentPage - 1) * logsPerPage;
+                const endIndex = startIndex + logsPerPage;
+                logsToDownload = filteredLogs.slice(startIndex, endIndex);
+                filename = `patient_logs_page_${currentPage}.csv`;
+            } else {
+                logsToDownload = filteredLogs;
+                filename = 'patient_logs_all_pages.csv';
+            }
+
+            // Create CSV content
+            let csvContent = "User Name,User ID,Patient Name,Date,Time,Field,From,To\n";
+
+            logsToDownload.forEach(log => {
+                log.edits.forEach(edit => {
+                    csvContent += `"${log.userName}","${log.userId}","${log.patientName}","${log.date}","${log.time}","${edit.field}","${edit.from || ''}","${edit.to || ''}"\n`;
+                });
+            });
+
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Close modal
+            document.getElementById('downloadModal').classList.add('hidden');
+        }
+
+        function downloadCSV() {
+            if (filteredLogs.length === 0) {
+                alert('No logs to download');
+                return;
+            }
+
+            // Create CSV content
+            let csvContent = "User Name,User ID,Patient Name,Date,Time,Field,From,To\n";
+
+            filteredLogs.forEach(log => {
+                log.edits.forEach(edit => {
+                    csvContent += `"${log.userName}","${log.userId}","${log.patientName}","${log.date}","${log.time}","${edit.field}","${edit.from || ''}","${edit.to || ''}"\n`;
+                });
+            });
+
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'patient_logs.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         // Initialize the page
         function init() {
             // Set up event listeners
@@ -459,10 +592,26 @@
                 applyFilters();
             });
 
+            // Show download options when clicking the download button
+            document.getElementById('downloadCsv').addEventListener('click', showDownloadOptions);
+
+            // Set up modal event listeners
+            document.getElementById('downloadCurrentPage').addEventListener('click', () => downloadCSV('current'));
+            document.getElementById('downloadAllPages').addEventListener('click', () => downloadCSV('all'));
+            document.getElementById('closeDownloadModal').addEventListener('click', () => {
+                document.getElementById('downloadModal').classList.add('hidden');
+            });
+
+            // Close modal when clicking outside
+            document.getElementById('downloadModal').addEventListener('click', (e) => {
+                if (e.target.id === 'downloadModal') {
+                    document.getElementById('downloadModal').classList.add('hidden');
+                }
+            });
+
             // Load initial data
             fetchLogs();
         }
-
         // Start when page is loaded
         document.addEventListener('DOMContentLoaded', init);
     </script>
