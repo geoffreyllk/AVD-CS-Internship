@@ -394,12 +394,10 @@
           try {
             const res = await fetch('/metadata.json');
             if (!res.ok) throw new Error("HTTP error " + res.status);
-            const data = await res.json();
-            console.log("Loaded metadata:", data);
-            return data;    // ❌ you return it but never assign it
+            metadata = await res.json();   // 🔑 overwrite the global metadata
+            console.log("✅ Metadata loaded:", metadata);
           } catch (err) {
             console.error("❌ Metadata fetch error:", err);
-            throw err;
           }
         }
 
