@@ -7,6 +7,10 @@ const app = express();
 app.use(express.static(__dirname));
 app.use(express.json());
 
+app.get('/metadata.json', (req, res) => {
+  res.sendFile(path.join(__dirname, 'metadata.json'));
+});
+
 // Database connections
 const hospitalDB = mysql.createConnection({
   host: 'localhost',
@@ -44,10 +48,16 @@ patientDB.getConnection((err, connection) => {
 
 // Get hospital users for authentication
 app.get('/api/hospital-users', (req, res) => {
-  hospitalDB.query('SELECT hospital_id, name, access_level FROM hospital_users', (err, results) => {
-    if (err) return res.status(500).json({ error: 'Failed to fetch hospital users' });
-    res.json(results);
-  });
+  hospitalDB.query(
+    'SELECT hospital_id, name, access_level FROM hospital_users',
+    (err, results) => {
+      if (err) {
+        console.error("❌ SQL error in /api/hospital-users:", err);
+        return res.status(500).json({ error: 'Failed to fetch hospital users', details: err.message });
+      }
+      res.json(results);
+    }
+  );
 });
 
 // Get all patients

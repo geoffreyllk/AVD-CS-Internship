@@ -128,8 +128,10 @@
         // View Toggle
         const toggleBtn = document.getElementById('toggleViewBtn');
         const gridContainer = document.getElementById('grid-container');
+
         let currentView = 'grid';
         let patientsData = [];
+        let metadata = { allergyData: {}, notesData: {} };
 
         const savedView = localStorage.getItem('patientViewMode');
         if (savedView === 'list' || savedView === 'grid') {
@@ -388,55 +390,18 @@
               });
         }
 
-        const allergyData = {
-            "Food Allergy": "",
-            "Indoor and Seasonal Allergy": "",
-            "Insect Sting Allergy": "",
-            "Drug Allergy": "",
-            "Skin Allergy": ""
-        };
-
-        const notesData = {
-            "General Practitioners (GP)": "",
-            "Family Physicians": "",
-            "Internists": "",
-            "Cardiologists": "",
-            "Neurologists": "",
-            "Oncologists": "",
-            "Dermatologists": "",
-            "Gastroenterologists": "",
-            "Endocrinologists": "",
-            "Nephrologists": "",
-            "Rheumatologists": "",
-            "Pulmonologists": "",
-            "Infectious Disease Specialists": "",
-            "Psychiatrists": "",
-            "Pediatricians": "",
-            "Gynecologists and Obstetricians (OB)": "",
-            "General Surgeon": "",
-            "Orthopedic Surgeon": "",
-            "Neurosurgeon": "",
-            "Cardiothoracic Surgeon": "",
-            "Plastic Surgeon": "",
-            "Urologists": "",
-            "Ophthalmologists": "",
-            "Anesthesiologists": "",
-            "Radiologists": "",
-            "Pathologists": "",
-            "Emergency Medicine Physicians": "",
-            "Rehabilitation Medicine Specialists": "",
-            "Sorts Medicine Physicians": "",
-            "Hematologists": "",
-            "Otolaryngologists": "",
-            "Nutritionists": "",
-            "Dentist": "",
-            "Paramedics": "",
-            "Physical Therapists": "",
-            "Occupational Therapists": "",
-            "Psychologists": "",
-            "Midwives": "",
-            "Optometrists": ""
-        };
+        async function loadMetadata() {
+          try {
+            const res = await fetch('/metadata.json');
+            if (!res.ok) throw new Error("HTTP error " + res.status);
+            const data = await res.json();
+            console.log("Loaded metadata:", data);
+            return data;    // ❌ you return it but never assign it
+          } catch (err) {
+            console.error("❌ Metadata fetch error:", err);
+            throw err;
+          }
+        }
 
         // Load saved data from localStorage on page load
         let patientDataStore = JSON.parse(localStorage.getItem('patientDataStore')) || {};
@@ -523,7 +488,7 @@
           let html = '';
 
           if (section === 'allergy') {
-            const options = Object.keys(allergyData);
+            const options = Object.keys(metadata.allergyData);
             html = `
               <h2 class="text-xl font-semibold mb-4">Allergy</h2>
               <label class="block mb-2 font-medium">Select Allergy Type</label>
@@ -555,7 +520,7 @@
           }
 
           else if (section === 'notes') {
-            const options = Object.keys(notesData);
+            const options = Object.keys(metadata.notesData);
             html = `
               <h2 class="text-xl font-semibold mb-4">Notes</h2>
               <label class="block mb-2 font-medium">Select Doctor</label>
@@ -700,7 +665,9 @@
             renderPatients();
         });
 
-        document.addEventListener('DOMContentLoaded', loadPatients);
+        document.addEventListener("DOMContentLoaded", async () => {
+          await Promise.all([loadMetadata(), loadPatients()]);
+        });
     </script>
 </body>
 </html>
