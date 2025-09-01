@@ -1,0 +1,25 @@
+{
+  "name": "avd-cs-internship",
+  "version": "1.0.0",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/geoffreyllk/AVD-CS-Internship.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/geoffreyllk/AVD-CS-Internship/issues"
+  },
+  "homepage": "https://github.com/geoffreyllk/AVD-CS-Internship#readme",
+  "description": "",
+  "dependencies": {
+    "express": "^5.1.0",
+    "mysql2": "^3.14.3"
+  }
+}
