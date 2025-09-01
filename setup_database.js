@@ -22,18 +22,11 @@ async function setupDatabases() {
     await connection.promise().query(`
       CREATE TABLE IF NOT EXISTS hospital_users (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        hospital_id VARCHAR(20) UNIQUE NOT NULL,
+        hospital_id VARCHAR(50) UNIQUE NOT NULL,
+        name VARCHAR(100) NOT NULL,
         access_level ENUM('admin', 'employee') DEFAULT 'employee',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
-    `);
-    
-    // Insert sample hospital users
-    await connection.promise().query(`
-      INSERT IGNORE INTO hospital_users (hospital_id, access_level) VALUES
-      ('A123', 'admin'),
-      ('B123', 'employee'),
-      ('C123', 'employee')
     `);
     
     console.log('✅ Hospital database setup completed');
