@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Patient Records</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
     <script src="auth.js" defer></script>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -60,6 +62,7 @@
                             <li><button class="section-btn w-full text-left px-2 py-1 rounded hover:bg-gray-200" data-section="treatment">Treatment</button></li>
                             <li><button class="section-btn w-full text-left px-2 py-1 rounded hover:bg-gray-200" data-section="orders">Orders</button></li>
                             <li><button class="section-btn w-full text-left px-2 py-1 rounded hover:bg-gray-200" data-section="notes">Notes</button></li>
+                            <li><button class="section-btn w-full text-left px-2 py-1 rounded hover:bg-gray-200" data-section="vitals">Vitals</button></li>
                         </ul>
                     </div>
 
@@ -368,7 +371,7 @@
             modal.classList.remove('hidden'); // 🔑 show modal
 
             // Default section
-            renderSection('allergy', patient);
+            renderSection('vitals', patient);
 
             // Side navigation buttons
             document.querySelectorAll('.section-btn').forEach(btn => {
@@ -534,7 +537,118 @@
             `;
             setTimeout(() => setupSectionSave('notes', patient.id, 'notesSelect', 'notesTextarea', 'notesSaveBtn'), 0);
           }
+          else if (section === 'vitals') {
+              html = `
+                <h2 class="text-xl font-semibold mb-4">Vitals</h2>
 
+                <div class="mb-6"><h3 class="font-medium mb-2">Heart Rate</h3><canvas id="chartHR" height="150"></canvas></div>
+                <div class="mb-6"><h3 class="font-medium mb-2">Pulse</h3><canvas id="chartPulse" height="150"></canvas></div>
+                <div class="mb-6"><h3 class="font-medium mb-2">SpO₂</h3><canvas id="chartSpO2" height="150"></canvas></div>
+                <div class="mb-6"><h3 class="font-medium mb-2">Temperature</h3><canvas id="chartTemp" height="150"></canvas></div>
+                <div class="mb-6"><h3 class="font-medium mb-2">Blood Pressure</h3><canvas id="chartBP" height="150"></canvas></div>
+              `;
+
+              // Fetch vitals history and render charts
+              fetch(`/api/patients/${patient.id}/vitals-history`)
+                .then(res => res.json())
+                .then(data => {
+                  const chartOptions = {
+                    responsive: true,
+                    plugins: {
+                      legend: { display: true },
+                      datalabels: {
+                        color: 'black',
+                        font: { weight: 'bold', size: 10 },
+                        formatter: (value) => value,
+                        align: (context) => {
+                          const chart = context.chart;
+                          const yScale = chart.scales.y;
+                          const mid = (yScale.max + yScale.min) / 2;
+                          const pointValue = context.dataset.data[context.dataIndex];
+                          return pointValue > mid ? 'bottom' : 'top';
+                        },
+                        anchor: 'center',
+                        offset: 4
+                      }
+                    }
+                  };
+
+                  // Utility: always create a chart, even with empty data
+                  function createChart(canvasId, label, dataPoints, borderColor) {
+                    new Chart(document.getElementById(canvasId), {
+                      type: 'line',
+                      data: {
+                        labels: dataPoints.map(d => d.time),
+                        datasets: [{
+                          label,
+                          data: dataPoints.map(d => d.value),
+                          borderColor,
+                          fill: false
+                        }]
+                      },
+                      options: chartOptions,
+                      plugins: [ChartDataLabels]
+                    });
+                  }
+
+                  // Heart Rate
+                  createChart("chartHR", "Heart Rate (bpm)", data["Heart Rate"] || [], "red");
+
+                  // Pulse
+                  createChart("chartPulse", "Pulse", data["Pulse Rate"] || [], "blue");
+
+                  // SpO₂
+                  createChart("chartSpO2", "SpO₂ (%)", data["SpO2"] || [], "green");
+
+                  // Temperature (C + F on same graph)
+                  new Chart(document.getElementById("chartTemp"), {
+                    type: 'line',
+                    data: {
+                      labels: (data["Temperature (C)"] || data["Temperature (F)"] || []).map(d => d.time),
+                      datasets: [
+                        {
+                          label: 'Temp (°C)',
+                          data: data["Temperature (C)"]?.map(d => d.value) || [],
+                          borderColor: 'orange',
+                          fill: false
+                        },
+                        {
+                          label: 'Temp (°F)',
+                          data: data["Temperature (F)"]?.map(d => d.value) || [],
+                          borderColor: 'purple',
+                          fill: false
+                        }
+                      ]
+                    },
+                    options: chartOptions,
+                    plugins: [ChartDataLabels]
+                  });
+
+                  // Blood Pressure (systolic + diastolic)
+                  new Chart(document.getElementById("chartBP"), {
+                    type: 'line',
+                    data: {
+                      labels: (data["BP Systolic"] || data["BP Diastolic"] || []).map(d => d.time),
+                      datasets: [
+                        {
+                          label: 'Systolic',
+                          data: data["BP Systolic"]?.map(d => d.value) || [],
+                          borderColor: 'brown',
+                          fill: false
+                        },
+                        {
+                          label: 'Diastolic',
+                          data: data["BP Diastolic"]?.map(d => d.value) || [],
+                          borderColor: 'gray',
+                          fill: false
+                        }
+                      ]
+                    },
+                    options: chartOptions,
+                    plugins: [ChartDataLabels]
+                  });
+                });
+          }
           document.getElementById('modalContent').innerHTML = html;
           renderSavedEntries(patient.id, section);
         }

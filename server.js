@@ -240,6 +240,42 @@ app.get('/api/audit-logs', (req, res) => {
     });
 });
 
+// Get vitals history for a patient
+app.get('/api/patients/:id/vitals-history', (req, res) => {
+  const patientId = req.params.id;
+  const vitalsFields = [
+    'Heart Rate', 'Pulse Rate', 'SpO2',
+    'Temperature (C)', 'Temperature (F)',
+    'BP Systolic', 'BP Diastolic'
+  ];
+
+  const sql = `
+    SELECT
+      field,
+      new_value AS value,
+      DATE_FORMAT(timestamp, '%d/%m/%Y %H:%i') AS time
+    FROM audit_logs
+    WHERE patient_id = ? AND field IN (?)
+    ORDER BY timestamp ASC
+  `;
+
+  patientDB.query(sql, [patientId, vitalsFields], (err, results) => {
+    if (err) {
+      console.error('Database error in /api/patients/:id/vitals-history:', err);
+      return res.status(500).json({ error: 'Database error', details: err.message });
+    }
+
+    // Group by field
+    const grouped = results.reduce((acc, row) => {
+      if (!acc[row.field]) acc[row.field] = [];
+      acc[row.field].push({ time: row.time, value: row.value });
+      return acc;
+    }, {});
+
+    res.json(grouped);
+  });
+});
+
 // Start server
 const PORT = 3333;
 app.listen(PORT, () => {
