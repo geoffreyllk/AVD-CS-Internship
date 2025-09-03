@@ -149,6 +149,12 @@
             renderPatients();
         });
 
+        //TIME FUNCTION
+        function getTimestamp() {
+          const now = new Date();
+          return now.toLocaleString();
+        }
+
         // [ validation helpers ]
         function validateNumber(raw) {
             const n = parseFloat(raw);
@@ -407,11 +413,6 @@
         // Load saved data from localStorage on page load
         let patientDataStore = JSON.parse(localStorage.getItem('patientDataStore')) || {};
 
-        // Utility: Format timestamp
-        function getTimestamp() {
-          const now = new Date();
-          return now.toLocaleString(); // Example: "18/8/2025, 3:45:22 pm"
-        }
 
         // Save data to localStorage whenever updated
         function saveEntry(patientId, section, type, text) {
@@ -573,15 +574,21 @@
                     }
                   };
 
+                  // Utility: sort by timestamp (oldest → newest)
+                  function sortByTime(dataPoints) {
+                    return [...dataPoints].sort((a, b) => new Date(a.time) - new Date(b.time));
+                  }
+
                   // Utility: always create a chart, even with empty data
                   function createChart(canvasId, label, dataPoints, borderColor) {
+                    const sortedData = sortByTime(dataPoints);
                     new Chart(document.getElementById(canvasId), {
                       type: 'line',
                       data: {
-                        labels: dataPoints.map(d => d.time),
+                        labels: sortedData.map(d => d.time),
                         datasets: [{
                           label,
-                          data: dataPoints.map(d => d.value),
+                          data: sortedData.map(d => d.value),
                           borderColor,
                           fill: false
                         }]
@@ -601,20 +608,22 @@
                   createChart("chartSpO2", "SpO₂ (%)", data["SpO2"] || [], "green");
 
                   // Temperature (C + F on same graph)
+                  const tempC = sortByTime(data["Temperature (C)"] || []);
+                  const tempF = sortByTime(data["Temperature (F)"] || []);
                   new Chart(document.getElementById("chartTemp"), {
                     type: 'line',
                     data: {
-                      labels: (data["Temperature (C)"] || data["Temperature (F)"] || []).map(d => d.time),
+                      labels: tempC.length ? tempC.map(d => d.time) : tempF.map(d => d.time),
                       datasets: [
                         {
                           label: 'Temp (°C)',
-                          data: data["Temperature (C)"]?.map(d => d.value) || [],
+                          data: tempC.map(d => d.value),
                           borderColor: 'orange',
                           fill: false
                         },
                         {
                           label: 'Temp (°F)',
-                          data: data["Temperature (F)"]?.map(d => d.value) || [],
+                          data: tempF.map(d => d.value),
                           borderColor: 'purple',
                           fill: false
                         }
@@ -625,20 +634,22 @@
                   });
 
                   // Blood Pressure (systolic + diastolic)
+                  const bpSys = sortByTime(data["BP Systolic"] || []);
+                  const bpDia = sortByTime(data["BP Diastolic"] || []);
                   new Chart(document.getElementById("chartBP"), {
                     type: 'line',
                     data: {
-                      labels: (data["BP Systolic"] || data["BP Diastolic"] || []).map(d => d.time),
+                      labels: bpSys.length ? bpSys.map(d => d.time) : bpDia.map(d => d.time),
                       datasets: [
                         {
                           label: 'Systolic',
-                          data: data["BP Systolic"]?.map(d => d.value) || [],
+                          data: bpSys.map(d => d.value),
                           borderColor: 'brown',
                           fill: false
                         },
                         {
                           label: 'Diastolic',
-                          data: data["BP Diastolic"]?.map(d => d.value) || [],
+                          data: bpDia.map(d => d.value),
                           borderColor: 'gray',
                           fill: false
                         }
