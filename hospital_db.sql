@@ -8,8 +8,3 @@ CREATE TABLE IF NOT EXISTS hospital_users (
     name VARCHAR(100) NOT NULL,
     access_level ENUM('admin', 'employee') NOT NULL
 );
-
-INSERT INTO hospital_users (hospital_id, name, access_level) VALUES
-('ADM123', 'Admin User', 'admin'),
-('EMP456', 'John Doe', 'employee'),
-('EMP789', 'Anna Lim', 'employee');
