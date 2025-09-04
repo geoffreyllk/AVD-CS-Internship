@@ -17,9 +17,10 @@
     "url": "https://github.com/geoffreyllk/AVD-CS-Internship/issues"
   },
   "homepage": "https://github.com/geoffreyllk/AVD-CS-Internship#readme",
-  "description": "",
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "express": "^5.1.0",
     "mysql2": "^3.14.3"
-  }
+  },
+  "description": ""
 }

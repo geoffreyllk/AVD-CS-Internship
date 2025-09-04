@@ -25,6 +25,7 @@ async function setupDatabases() {
         hospital_id VARCHAR(50) UNIQUE NOT NULL,
         name VARCHAR(100) NOT NULL,
         access_level ENUM('admin', 'employee') DEFAULT 'employee',
+        password VARCHAR(255) NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);

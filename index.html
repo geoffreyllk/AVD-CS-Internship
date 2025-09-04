@@ -15,10 +15,11 @@
     <!-- Security Overlay -->
     <div id="overlay" class="fixed inset-0 flex items-center justify-center bg-black backdrop-blur-sm bg-opacity-80 z-50">
         <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
-            <h2 class="text-xl font-semibold mb-4 text-center">Enter your hospital ID</h2>
+            <h2 class="text-xl font-semibold mb-4 text-center">Login</h2>
             <form id="entry-form" class="space-y-4">
+                <input type="text" id="code-input" placeholder="Hospital ID" required class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <div class="relative">
-                    <input type="password" id="code-input" placeholder="Hospital ID" required class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="password" id="password-input" placeholder="Password" required class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <span id="toggle-visibility" class="material-icons absolute top-2.5 right-3 text-gray-500 cursor-pointer" onclick="toggleVisibility()">visibility</span>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">Submit</button>

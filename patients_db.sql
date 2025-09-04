@@ -32,3 +32,9 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     INDEX (patient_id),
     INDEX (timestamp)
 );
+
+INSERT INTO patients (id, name, age, gender, heart_rate, pulse_rate, spo2, temp_celsius, temp_fahrenheit, bp_systolic, bp_diastolic) VALUES
+('P001', 'John Doe', 54, 'Male', 72, 72, 98, 36.6, 97.9, 120, 80),
+('P002', 'Amira Yusof', 43, 'Female', 75, 74, 99, 37.0, 98.6, 118, 78),
+('P003', 'Tan Wei Lun', 68, 'Male', 68, 67, 97, 36.8, 98.2, 130, 85),
+('P004', 'Sophia Lee', 29, 'Female', 82, 81, 100, 36.5, 97.7, 110, 70);
