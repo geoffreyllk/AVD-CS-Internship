@@ -63,6 +63,105 @@ app.post('/api/login', (req, res) => {
   );
 });
 
+// -------- GET /api/users --------
+app.get('/api/users', (req, res) => {
+  console.log('[api] GET /api/users');
+  hospitalDB.query(
+    'SELECT hospital_id, name, access_level FROM hospital_users',
+    (err, results) => {
+      if (err) {
+        console.error('[db] GET /api/users error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      return res.json(results); // will be an array (maybe empty)
+    }
+  );
+});
+
+// -------- POST /api/users --------
+app.post('/api/users', async (req, res) => {
+  const { hospital_id, name, access_level, password } = req.body;
+
+  if (!hospital_id || !name || !access_level || !password) {
+    return res.status(400).json({ error: 'Missing fields: hospital_id, name, access_level, password are required' });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    hospitalDB.query(
+      'INSERT INTO hospital_users (hospital_id, name, access_level, password) VALUES (?, ?, ?, ?)',
+      [hospital_id, name, access_level, hashedPassword],
+      (err, result) => {
+        if (err) {
+          console.error('[db] POST /api/users error:', err);
+          if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: 'Hospital ID already exists' });
+          }
+          return res.status(500).json({ error: 'Database error' });
+        }
+        return res.status(201).json({ success: true, message: 'User added successfully' });
+      }
+    );
+  } catch (hashErr) {
+    console.error('[hash] POST /api/users error:', hashErr);
+    return res.status(500).json({ error: 'Hashing error' });
+  }
+});
+
+// -------- DELETE /api/users/:hospitalId --------
+app.delete('/api/users/:hospitalId', (req, res) => {
+  const { hospitalId } = req.params;
+  if (!hospitalId) return res.status(400).json({ error: 'Missing hospitalId param' });
+
+  hospitalDB.query(
+    'DELETE FROM hospital_users WHERE hospital_id = ?',
+    [hospitalId],
+    (err, result) => {
+      if (err) {
+        console.error('[db] DELETE /api/users/:hospitalId error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      return res.json({ success: true, message: 'User deleted successfully' });
+    }
+  );
+});
+
+// RESET PASSWORD
+app.put("/api/users/:hospitalId/reset", async (req, res) => {
+  const { hospitalId } = req.params;
+  const { newPassword } = req.body;
+
+  if (!newPassword) {
+    return res.status(400).json({ error: "New password required" });
+  }
+
+  try {
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    hospitalDB.query(
+      "UPDATE hospital_users SET password = ? WHERE hospital_id = ?",
+      [hashed, hospitalId],
+      (err, result) => {
+        if (err) {
+          console.error("Reset password DB error", err);
+          return res.status(500).json({ error: "Database error" });
+        }
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ error: "User not found" });
+        }
+        res.json({ success: true, message: "Password reset successfully" });
+      }
+    );
+  } catch (err) {
+    console.error("Hashing error", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 app.get('/api/patients', (req, res) => {
   patientDB.query('SELECT * FROM patients', (err, results) => {
     if (err) return res.status(500).json({ error: 'Database error' });

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Admin Panel</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <style>
+        #toastRoot { pointer-events: none; }
+        .toast { pointer-events: auto; transform: translateY(-140%); opacity: 0; transition: transform 320ms cubic-bezier(.2,.9,.4,1), opacity 240ms ease; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .modal-wrap { display: flex; align-items: center; justify-content: center; }
+    </style>
+    <script src="auth.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <!-- Security Overlay -->
+    <div id="overlay" class="fixed inset-0 flex items-center justify-center bg-black backdrop-blur-sm bg-opacity-80 z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
+            <h2 class="text-xl font-semibold mb-4 text-center">Login</h2>
+            <form id="entry-form" class="space-y-4">
+                <input type="text" id="code-input" placeholder="Hospital ID" required class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="relative">
+                    <input type="password" id="password-input" placeholder="Password" required class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span id="toggle-visibility" class="material-icons absolute top-2.5 right-3 text-gray-500 cursor-pointer" onclick="toggleVisibility()">visibility</span>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">Submit</button>
+                <p id="error-msg" class="text-red-500 text-sm text-center"></p>
+            </form>
+        </div>
+    </div>
+    <header class="bg-blue-700 text-white p-4 flex justify-between items-center shadow">
+        <h1 class="text-2xl font-bold">Admin Panel</h1>
+        <img src="images/logo-placeholder.jpg" alt="Logo" class="h-10 w-auto">
+    </header>
+
+    <nav class="bg-blue-600 text-white px-4 py-3 shadow">
+        <ul class="flex space-x-4">
+            <li><a href="index.html" class="hover:underline">Home</a></li>
+            <li><a href="logs.html" class="hover:underline">Logs</a></li>
+            <li><a href="admin.html" class="hover:underline font-semibold">Admin</a></li>
+        </ul>
+    </nav>
+
+    <!-- GLOBAL TOAST ROOT -->
+    <div id="toastRoot" class="fixed inset-x-0 top-4 z-50 flex justify-center"></div>
+
+    <main class="flex-grow p-4">
+        <div class="max-w-6xl mx-auto bg-white shadow rounded p-6 space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-semibold uppercase">User Management</h2>
+                <div class="flex items-center gap-3">
+                    <button id="refreshBtn" title="Refresh users" aria-label="Refresh users"
+                            class="bg-white border p-2 rounded-md hover:bg-gray-50 shadow-sm flex items-center justify-center">
+                        <span class="material-icons" style="font-size:20px">refresh</span>
+                    </button>
+                    <button id="addUserBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">+ Add User</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm border">
+                    <thead class="bg-gray-100 border-b">
+                    <tr>
+                        <th class="px-4 py-2 text-left">Hospital ID</th>
+                        <th class="px-4 py-2 text-left">Name</th>
+                        <th class="px-4 py-2 text-left">Access Level</th>
+                        <th class="px-4 py-2 text-left">Password</th>
+                        <th class="px-4 py-2 text-left">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="usersTable" class="divide-y"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center text-white text-xs sm:text-sm py-6 px-12 mt-8 bg-blue-700">
+        <p>Patient Records System © 2025</p>
+    </footer>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="fixed inset-0 bg-black bg-opacity-40 modal-wrap hidden z-40">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <h3 class="text-lg font-semibold mb-4">Add New User</h3>
+            <form id="addUserForm" class="space-y-4" autocomplete="off">
+                <input id="input_hospital_id" type="text" name="hospital_id" placeholder="Hospital ID" required class="w-full border rounded px-3 py-2" />
+                <input id="input_name" type="text" name="name" placeholder="Name" required class="w-full border rounded px-3 py-2" />
+                <select id="input_access_level" name="access_level" required class="w-full border rounded px-3 py-2">
+                    <option value="">Select Access Level</option>
+                    <option value="admin">Admin</option>
+                    <option value="employee">Employee</option>
+                </select>
+                <div>
+                    <input id="input_password" type="password" name="password" placeholder="Password" required class="w-full border rounded px-3 py-2" />
+                    <p id="addPwHint" class="mt-1 text-xs text-gray-500">Password must include at least 8 characters and a combination of digits and symbols.</p>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="cancelAddUser" class="px-4 py-2 border rounded hover:bg-gray-100">Cancel</button>
+                    <button type="submit" id="submitAddUser" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Reset Modal -->
+    <div id="confirmResetModal" class="fixed inset-0 bg-black bg-opacity-40 modal-wrap hidden z-40">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <h3 class="text-lg font-semibold mb-2">Confirm Reset</h3>
+            <p id="confirmResetText" class="mb-4 text-sm text-gray-700"></p>
+            <div class="flex justify-end gap-3">
+                <button id="confirmResetYes" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Reset</button>
+                <button id="confirmResetNo" class="px-4 py-2 border rounded hover:bg-gray-100">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div id="resetPwModal" class="fixed inset-0 bg-black bg-opacity-40 modal-wrap hidden z-40">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <h3 class="text-lg font-semibold mb-2">Reset Password</h3>
+            <p id="resetPwUser" class="mb-4 text-sm text-gray-700"></p>
+            <form id="resetPwForm" class="space-y-4" autocomplete="off">
+                <div class="relative">
+                    <input id="reset_new_pw" type="password" placeholder="New Password" required class="w-full border rounded px-3 py-2 pr-10" />
+                    <button id="toggle_new_pw" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700" aria-label="Toggle new password visibility">
+                        <span id="toggle_new_pw_icon" class="material-icons">visibility</span>
+                    </button>
+                </div>
+                <input id="reset_repeat_pw" type="password" placeholder="Repeat New Password" required class="w-full border rounded px-3 py-2" />
+                <p id="resetPwHint" class="mt-1 text-xs text-gray-500">Password must include at least 8 characters and a combination of digits and symbols.</p>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="cancelResetPw" class="px-4 py-2 border rounded hover:bg-gray-100">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="confirmDeleteModal" class="fixed inset-0 bg-black bg-opacity-40 modal-wrap hidden z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <h3 class="text-lg font-semibold mb-2 text-red-600">Confirm Delete</h3>
+            <p id="confirmDeleteText" class="mb-4 text-sm text-gray-700"></p>
+            <div class="flex justify-end gap-3">
+                <button id="confirmDeleteYes" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
+                <button id="confirmDeleteNo" class="px-4 py-2 border rounded hover:bg-gray-100">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM refs
+        const usersTable = document.getElementById('usersTable');
+        const addUserBtn = document.getElementById('addUserBtn');
+        const addUserModal = document.getElementById('addUserModal');
+        const cancelAddUser = document.getElementById('cancelAddUser');
+        const addUserForm = document.getElementById('addUserForm');
+        const submitAddUser = document.getElementById('submitAddUser');
+        const inputPassword = document.getElementById('input_password');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const toastRoot = document.getElementById('toastRoot');
+
+        // delete refs
+        const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+        const confirmDeleteText = document.getElementById('confirmDeleteText');
+        const confirmDeleteYes = document.getElementById('confirmDeleteYes');
+        const confirmDeleteNo = document.getElementById('confirmDeleteNo');
+
+        // reset refs
+        const confirmResetModal = document.getElementById('confirmResetModal');
+        const confirmResetText = document.getElementById('confirmResetText');
+        const confirmResetYes = document.getElementById('confirmResetYes');
+        const confirmResetNo = document.getElementById('confirmResetNo');
+
+        const resetPwModal = document.getElementById('resetPwModal');
+        const resetPwForm = document.getElementById('resetPwForm');
+        const cancelResetPw = document.getElementById('cancelResetPw');
+        const resetPwUser = document.getElementById('resetPwUser');
+        const resetNewPwInput = document.getElementById('reset_new_pw');
+        const resetRepeatPwInput = document.getElementById('reset_repeat_pw');
+        const toggleNewPwBtn = document.getElementById('toggle_new_pw');
+        const toggleNewPwIcon = document.getElementById('toggle_new_pw_icon');
+
+        let resetTargetId = null;
+        let resetTargetName = null;
+        let deleteTargetId = null;
+
+        function escapeHtml(s) {
+            return (s||'').toString()
+                .replace(/&/g,'&amp;')
+                .replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;')
+                .replace(/"/g,'&quot;')
+                .replace(/'/g,'&#39;');
+        }
+
+        // Toast helper (appear from top)
+        function showToast(type, text, options = {}) {
+            const id = 'toast-' + Date.now();
+            const icon = (type === 'success') ? 'check_circle' : (type === 'error') ? 'error' : 'info';
+            const bg = (type === 'success') ? 'bg-green-50 border border-green-100 text-green-800' :
+                        (type === 'error') ? 'bg-red-50 border border-red-100 text-red-800' :
+                        'bg-blue-50 border border-blue-100 text-blue-800';
+
+            const wrap = document.createElement('div');
+            wrap.id = id;
+            wrap.className = 'toast max-w-xl w-full mx-4 rounded-lg shadow-lg overflow-hidden ' + bg;
+            wrap.innerHTML = (
+                '<div class="flex items-center gap-3 p-3">' +
+                    '<span class="material-icons" style="font-size:20px">' + icon + '</span>' +
+                    '<div class="flex-1 text-sm">' + escapeHtml(text) + '</div>' +
+                    '<button class="px-2 py-1 text-sm opacity-70 hover:opacity-100 close-btn">✕</button>' +
+                '</div>'
+            );
+
+            toastRoot.appendChild(wrap);
+            requestAnimationFrame(() => wrap.classList.add('show'));
+
+            const remove = () => {
+                wrap.classList.remove('show');
+                setTimeout(() => wrap.remove(), 350);
+            };
+            wrap.querySelector('.close-btn').addEventListener('click', remove);
+            const timeout = options.timeout === 0 ? null : (options.timeout || 4000);
+            if (timeout) setTimeout(remove, timeout);
+        }
+
+        // fetch wrapper
+        async function safeFetch(url, opts) {
+            try {
+                const res = await fetch(url, opts);
+                let body = null;
+                try { body = await res.json(); } catch (e) { /* ignore */ }
+                return { ok: res.ok, status: res.status, body };
+            } catch (err) {
+                return { ok: false, status: 0, body: null, error: err };
+            }
+        }
+
+        function validatePasswordStrength(pw) {
+            if (!pw || pw.length < 8) return { ok: false, message: 'Password must be at least 8 characters.' };
+            if (!/[0-9]/.test(pw)) return { ok: false, message: 'Password must include a number.' };
+            if (!/[^A-Za-z0-9]/.test(pw)) return { ok: false, message: 'Password must include a special character (e.g. !@#$).' };
+            return { ok: true, message: 'OK' };
+        }
+
+        async function fetchUsers() {
+            usersTable.innerHTML = '<tr><td colspan="5" class="p-4 text-gray-600">Loading...</td></tr>';
+            const { ok, body } = await safeFetch('/api/users');
+            if (!ok || !Array.isArray(body)) {
+                usersTable.innerHTML = '<tr><td colspan="5" class="p-4 text-red-600">Failed to load users</td></tr>';
+                return;
+            }
+            renderUsers(body);
+        }
+
+        function renderUsers(users) {
+            usersTable.innerHTML = '';
+            if (!users.length) {
+                usersTable.innerHTML = '<tr><td colspan="5" class="p-4 text-gray-600">No users</td></tr>';
+                return;
+            }
+
+            users.forEach(u => {
+                const idEsc = escapeHtml(u.hospital_id || '');
+                const nameEsc = escapeHtml(u.name || '');
+                const accessEsc = escapeHtml(u.access_level || '');
+
+                // If currentUserId matches this user, disable the delete button
+                const isSelf = currentUserId && (currentUserId === (u.hospital_id || ''));
+
+                const deleteBtn = isSelf
+                    ? '<button disabled aria-disabled="true" title="You cannot delete your own account" class="delete-btn opacity-50 cursor-not-allowed px-2 py-1 rounded">Delete</button>'
+                    : '<button data-id="' + escapeHtml(u.hospital_id || '') + '" class="delete-btn text-red-600 hover:underline px-2 py-1 rounded">Delete</button>';
+
+                const resetBtn = '<button data-id="' + escapeHtml(u.hospital_id || '') + '" data-name="' + nameEsc + '" class="reset-btn text-blue-600 hover:underline px-2 py-1 rounded">Reset</button>';
+
+                const row = document.createElement('tr');
+                row.innerHTML =
+                    '<td class="px-4 py-2">' + idEsc + '</td>' +
+                    '<td class="px-4 py-2">' + nameEsc + '</td>' +
+                    '<td class="px-4 py-2 capitalize">' + accessEsc + '</td>' +
+                    '<td class="px-4 py-2">' + resetBtn + '</td>' +
+                    '<td class="px-4 py-2">' + deleteBtn + '</td>';
+                usersTable.appendChild(row);
+            });
+        }
+
+        usersTable.addEventListener('click', (ev) => {
+            const resetBtn = ev.target.closest('.reset-btn');
+            if (resetBtn) {
+                ev.preventDefault();
+                handleResetClick(resetBtn);
+                return;
+            }
+            const delBtn = ev.target.closest('.delete-btn');
+            if (delBtn) {
+                // If disabled (self), ignore
+                if (delBtn.disabled) {
+                    showToast('error', 'You cannot delete the account you are currently logged in with.');
+                    return;
+                }
+                ev.preventDefault();
+                handleDeleteClick(delBtn);
+                return;
+            }
+        });
+
+
+        // delete
+        function handleDeleteClick(el) {
+            deleteTargetId = el?.dataset?.id || null;
+            if (!deleteTargetId) return;
+            // safety: prevent deleting self even if button somehow not disabled
+            if (currentUserId && deleteTargetId === currentUserId) {
+                showToast('error', 'You cannot delete your own account.');
+                return;
+            }
+            confirmDeleteText.textContent = 'Delete user "' + deleteTargetId + '"? This action cannot be undone.';
+            confirmDeleteModal.classList.remove('hidden');
+        }
+
+        confirmDeleteYes.addEventListener('click', async () => {
+            if (!deleteTargetId) return;
+            // extra check
+            if (currentUserId && deleteTargetId === currentUserId) {
+                showToast('error', 'You cannot delete your own account.');
+                confirmDeleteModal.classList.add('hidden');
+                deleteTargetId = null;
+                return;
+            }
+            const { ok, body } = await safeFetch('/api/users/' + encodeURIComponent(deleteTargetId), { method: 'DELETE' });
+            if (!ok) { showToast('error', body?.error || 'Delete failed'); return; }
+            showToast('success', 'Deleted ' + deleteTargetId);
+            confirmDeleteModal.classList.add('hidden');
+            deleteTargetId = null;
+            fetchUsers();
+        });
+
+        confirmDeleteNo.addEventListener('click', () => {
+            confirmDeleteModal.classList.add('hidden');
+            deleteTargetId = null;
+        });
+
+        confirmDeleteModal.addEventListener('click', (e) => {
+            if (e.target === confirmDeleteModal) {
+                confirmDeleteModal.classList.add('hidden');
+                deleteTargetId = null;
+            }
+        });
+
+
+        // reset
+        (function() {
+            let detected = null;
+            try {
+                const ss = sessionStorage.getItem('user_id');
+                if (ss && String(ss).trim() !== '') detected = String(ss).trim();
+            } catch (e) {
+                detected = null;
+            }
+            if (!detected && typeof window.CURRENT_USER_ID !== 'undefined' && window.CURRENT_USER_ID !== null && String(window.CURRENT_USER_ID).trim() !== '') {
+                detected = String(window.CURRENT_USER_ID).trim();
+            }
+            if (!detected) {
+                const meta = document.querySelector('meta[name="current-user-id"]');
+                if (meta && meta.content && meta.content.trim() !== '') detected = meta.content.trim();
+            }
+            window.currentUserId = detected; // non-null string or null
+            console.debug('detected currentUserId:', window.currentUserId);
+        })();
+
+        function handleResetClick(btnEl) {
+            resetTargetId = btnEl.dataset.id || null;
+            resetTargetName = btnEl.dataset.name || '';
+            confirmResetText.textContent = 'Reset password for ' + (resetTargetName || resetTargetId) + '?';
+            confirmResetModal.classList.remove('hidden');
+        }
+
+        confirmResetYes.addEventListener('click', () => {
+            confirmResetModal.classList.add('hidden');
+            resetPwUser.textContent = 'Reset password for ' + (resetTargetName || resetTargetId);
+            resetPwModal.classList.remove('hidden');
+            setTimeout(() => resetNewPwInput.focus(), 120);
+        });
+
+        confirmResetNo.addEventListener('click', () => {
+            confirmResetModal.classList.add('hidden');
+            resetTargetId = null;
+            resetTargetName = null;
+        });
+
+        confirmResetModal.addEventListener('click', (e) => {
+            if (e.target === confirmResetModal) {
+                confirmResetModal.classList.add('hidden');
+                resetTargetId = null;
+                resetTargetName = null;
+            }
+        });
+
+        resetPwModal.addEventListener('click', (e) => {
+            if (e.target === resetPwModal) {
+                resetPwModal.classList.add('hidden');
+                resetPwForm.reset();
+                resetTargetId = null;
+                resetTargetName = null;
+            }
+        });
+
+        // Toggle eye for new password input
+        toggleNewPwBtn.addEventListener('click', () => {
+            if (resetNewPwInput.type === 'password') {
+                resetNewPwInput.type = 'text';
+                toggleNewPwIcon.textContent = 'visibility_off';
+            } else {
+                resetNewPwInput.type = 'password';
+                toggleNewPwIcon.textContent = 'visibility';
+            }
+            resetNewPwInput.focus();
+        });
+
+        cancelResetPw.addEventListener('click', () => {
+            resetPwModal.classList.add('hidden');
+            resetPwForm.reset();
+            resetTargetId = null;
+            resetTargetName = null;
+            resetNewPwInput.type = 'password';
+            toggleNewPwIcon.textContent = 'visibility';
+        });
+
+        resetPwForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPw = resetNewPwInput.value || '';
+            const repeatPw = resetRepeatPwInput.value || '';
+            if (newPw !== repeatPw) {
+                showToast('error', 'Passwords do not match.');
+                return;
+            }
+
+            // check strength
+            const check = validatePasswordStrength(newPw);
+            if (!check.ok) {
+                showToast('error', check.message);
+                return;
+            }
+
+            if (!resetTargetId) {
+                showToast('error', 'No user selected for reset.');
+                return;
+            }
+
+            const { ok, body } = await safeFetch('/api/users/' + encodeURIComponent(resetTargetId) + '/reset', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newPassword: newPw })
+            });
+            if (!ok) return showToast('error', body?.error || 'Reset failed');
+            showToast('success', 'Password reset successfully');
+            resetPwModal.classList.add('hidden');
+            resetPwForm.reset();
+            resetTargetId = null;
+            resetTargetName = null;
+            resetNewPwInput.type = 'password';
+            toggleNewPwIcon.textContent = 'visibility';
+            fetchUsers();
+        });
+
+        // add new user
+        addUserBtn.addEventListener('click', () => addUserModal.classList.remove('hidden'));
+        cancelAddUser.addEventListener('click', () => addUserModal.classList.add('hidden'));
+        addUserModal.addEventListener('click', (e) => { if (e.target === addUserModal) addUserModal.classList.add('hidden'); });
+
+        addUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitAddUser.disabled = true;
+            const formData = Object.fromEntries(new FormData(addUserForm).entries());
+            const pw = (formData.password || '').toString();
+
+            // Validate password strength
+            const check = validatePasswordStrength(pw);
+            if (!check.ok) {
+                showToast('error', 'Password: ' + check.message);
+                submitAddUser.disabled = false;
+                return;
+            }
+
+            // Proceed to create
+            const { ok, body } = await safeFetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type':'application/json' },
+                body: JSON.stringify(formData)
+            });
+            if (!ok) {
+                showToast('error', body?.error || 'Add failed');
+                submitAddUser.disabled = false;
+                return;
+            }
+            showToast('success','User added');
+            addUserForm.reset();
+            addUserModal.classList.add('hidden');
+            submitAddUser.disabled = false;
+            fetchUsers();
+        });
+
+        refreshBtn.addEventListener('click', fetchUsers);
+
+        // init
+        fetchUsers();
+    </script>
+</body>
+</html>
