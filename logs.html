@@ -366,7 +366,8 @@
 
                 const displayName = log.userName || log.adminName || 'Unknown';
                 const displayId = log.userId || log.adminId || 'N/A';
-                const subtitle = log.patientName ? `Patient: ${log.patientName}` : (log.targetName ? `Target: ${log.targetName}` : '');
+                const subtitle = log.patientName ? `Patient: ${log.patientName} (${log.patientId || 'N/A'})` : log.targetName? `${log.targetAccessLevel || 'Access'}: ${log.targetName} (${log.targetId || 'N/A'})`: '';
+
 
                 logElement.innerHTML = `
                     <div class="log-header flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50">
@@ -494,15 +495,20 @@
                 filename = `${ctx}_logs_all_pages.csv`;
             }
 
-            let csvContent = "Name,ID,Target/Patient,Timestamp,Action/Field,From,To\n";
+            // CSV headers
+            let csvContent = `"Name","ID","Role/Access Level","Patient/Target Name","Patient/Target ID","Timestamp","Action","Field Edited","From","To"\n`;
+
             logsToDownload.forEach(log => {
                 const ts = getTimestamp(log.timestamp);
-                if (log.edits) {
+                const role = log.accessLevel || log.role || log.targetAccessLevel || 'N/A';
+                const patientOrTargetId = log.patientId || log.targetId || 'N/A';
+
+                if (log.edits && log.edits.length > 0) {
                     log.edits.forEach(edit => {
-                        csvContent += `"${log.userName || log.adminName}","${log.userId || log.adminId}","${log.patientName || log.targetName || ''}","${log.date || ''}","${log.time || ''}","${edit.field}","${edit.from || ''}","${edit.to || ''}"\n`;
+                        csvContent += `"${log.userName || log.adminName || 'N/A'}","${log.userId || log.adminId || 'N/A'}","${role}","${log.patientName || log.targetName || 'N/A'}","${patientOrTargetId}","${ts}","","${edit.field || ''}","${edit.from || ''}","${edit.to || ''}"\n`;
                     });
                 } else {
-                    csvContent += `"${log.adminName}","${log.adminId}","${log.targetName}","${ts}","${log.action}","",""\n`;
+                    csvContent += `"${log.userName || log.adminName || 'N/A'}","${log.userId || log.adminId || 'N/A'}","${role}","${log.patientName || log.targetName || 'N/A'}","${patientOrTargetId}","${ts}","${log.action || 'N/A'}","","",""\n`;
                 }
             });
 
