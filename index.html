@@ -53,7 +53,13 @@
 
             <!-- Patient Modal -->
             <div id="patientModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white w-11/12 md:w-3/4 lg:w-2/3 h-5/6 rounded-lg shadow-lg flex overflow-hidden">
+                <div class="bg-white w-11/12 md:w-3/4 lg:w-2/3 h-5/6 rounded-lg shadow-lg flex overflow-hidden relative">
+
+                    <!-- Exit Button (fixed in top-left of modal) -->
+                    <button id="closeModal"
+                            class="absolute top-3 right-3 text-black w-8 h-8 flex items-center justify-center rounded-full shadow hover:bg-gray-200 z-10">
+                        &times;
+                    </button>
 
                     <!-- Side Navigation -->
                     <div class="w-1/4 bg-gray-100 border-r p-4">
@@ -69,8 +75,7 @@
                     </div>
 
                     <!-- Content Area -->
-                    <div class="w-3/4 p-6 overflow-y-auto relative">
-                        <button id="closeModal" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl">&times;</button>
+                    <div class="w-3/4 p-6 overflow-y-auto">
                         <div id="modalContent"></div>
                     </div>
 
@@ -153,8 +158,16 @@
 
         //TIME FUNCTION
         function getTimestamp() {
-          const now = new Date();
-          return now.toLocaleString();
+            const now = new Date();
+            return now.toLocaleString("en-GB", {
+                hour12: false,
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            }).replace(",", "");
         }
 
         // [ validation helpers ]
@@ -190,25 +203,20 @@
                     diastolic: validateNumber(p.bloodPressure?.diastolic),
                 },
                 lastUpdated:
-                    (typeof p.lastUpdated === 'string' && !isNaN(Date.parse(p.lastUpdated)))
+                    (typeof p.lastUpdated === 'string' && p.lastUpdated.trim() !== '')
                         ? p.lastUpdated
-                        : new Date().toISOString()
+                        : getTimestamp()
             };
         }
 
         // [ create Row and Grid functions ]
-        function formatTimestamp(iso) {
-            const d = new Date(iso);
-            const time = d.toLocaleTimeString([], {
-                hour:   '2-digit',
-                minute: '2-digit'
-            });
-            const date = d.toLocaleDateString([], {
-                month: 'numeric',
-                day:   'numeric',
-                year:  '2-digit'
-            });
-            return `${time} ${date}`;
+        function formatTimestamp(ts) {
+            // If already DD/MM/YYYY HH:mm:ss → return
+            if (/^\d{2}\/\d{2}\/\d{4}/.test(ts)) {
+                return ts;
+            }
+            // Otherwise parse into Date and convert to local via getTimestamp()
+            return getTimestamp();
         }
 
         function getColor(value, range) {
@@ -576,90 +584,128 @@
                     }
                   };
 
-                  // Utility: sort by timestamp (oldest → newest)
-                  function sortByTime(dataPoints) {
-                    return [...dataPoints].sort((a, b) => new Date(a.time) - new Date(b.time));
-                  }
+                  // Utility: parse DD/MM/YYYY HH:mm:ss into Date
+                    function parseDate(str) {
+                      // Handles formats like "26/09/2025 05:27"
+                      const [datePart, timePart] = str.split(" ");
+                      const [day, month, year] = datePart.split("/").map(Number);
+                      const [hour, minute, second] = (timePart || "00:00:00").split(":").map(Number);
+                      return new Date(year, month - 1, day, hour, minute, second || 0);
+                    }
 
-                  // Utility: always create a chart, even with empty data
-                  function createChart(canvasId, label, dataPoints, borderColor) {
-                    const sortedData = sortByTime(dataPoints);
-                    new Chart(document.getElementById(canvasId), {
+                    // Utility: sort by timestamp (oldest → newest) and keep only latest 20
+                    function sortByTime(dataPoints) {
+                      const sorted = [...dataPoints].sort((a, b) => parseDate(a.time) - parseDate(b.time));
+                      return sorted.slice(-20);
+                    }
+
+                    // Utility: always create a chart, even with empty data
+                    function createChart(canvasId, label, dataPoints, borderColor) {
+                      const sortedData = sortByTime(dataPoints);
+                      new Chart(document.getElementById(canvasId), {
+                        type: 'line',
+                        data: {
+                          labels: sortedData.map(d => d.time),
+                          datasets: [{
+                            label,
+                            data: sortedData.map(d => d.value),
+                            borderColor,
+                            fill: false
+                          }]
+                        },
+                        options: chartOptions,
+                        plugins: [ChartDataLabels]
+                      });
+                    }
+
+                    // Heart Rate
+                    createChart("chartHR", "Heart Rate (bpm)", data["Heart Rate"] || [], "red");
+
+                    // Pulse
+                    createChart("chartPulse", "Pulse", data["Pulse Rate"] || [], "blue");
+
+                    // SpO₂
+                    createChart("chartSpO2", "SpO₂ (%)", data["SpO2"] || [], "green");
+
+                    // Temperature (C + F on same graph)
+                    const tempC = sortByTime(data["Temperature (C)"] || []);
+                    const tempF = sortByTime(data["Temperature (F)"] || []);
+                    new Chart(document.getElementById("chartTemp"), {
                       type: 'line',
                       data: {
-                        labels: sortedData.map(d => d.time),
-                        datasets: [{
-                          label,
-                          data: sortedData.map(d => d.value),
-                          borderColor,
-                          fill: false
-                        }]
+                        labels: tempC.length ? tempC.map(d => d.time) : tempF.map(d => d.time),
+                        datasets: [
+                          {
+                            label: 'Temp (°C)',
+                            data: tempC.map(d => d.value),
+                            borderColor: 'orange',
+                            fill: false
+                          },
+                          {
+                            label: 'Temp (°F)',
+                            data: tempF.map(d => d.value),
+                            borderColor: 'purple',
+                            fill: false
+                          }
+                        ]
                       },
                       options: chartOptions,
                       plugins: [ChartDataLabels]
                     });
-                  }
 
-                  // Heart Rate
-                  createChart("chartHR", "Heart Rate (bpm)", data["Heart Rate"] || [], "red");
+                    // Blood Pressure (Systolic + Diastolic on same graph)
+                    const bpSys = sortByTime(data["BP Systolic"] || []);
+                    const bpDia = sortByTime(data["BP Diastolic"] || []);
 
-                  // Pulse
-                  createChart("chartPulse", "Pulse", data["Pulse Rate"] || [], "blue");
+                    // Build a merged timeline of all unique timestamps
+                    const allTimes = [...new Set([...bpSys.map(d => d.time), ...bpDia.map(d => d.time)])]
+                      .sort((a, b) => parseDate(a) - parseDate(b))
+                      .slice(-20); // keep latest 20
 
-                  // SpO₂
-                  createChart("chartSpO2", "SpO₂ (%)", data["SpO2"] || [], "green");
+                    let sysValues = [];
+                    let diaValues = [];
 
-                  // Temperature (C + F on same graph)
-                  const tempC = sortByTime(data["Temperature (C)"] || []);
-                  const tempF = sortByTime(data["Temperature (F)"] || []);
-                  new Chart(document.getElementById("chartTemp"), {
-                    type: 'line',
-                    data: {
-                      labels: tempC.length ? tempC.map(d => d.time) : tempF.map(d => d.time),
-                      datasets: [
-                        {
-                          label: 'Temp (°C)',
-                          data: tempC.map(d => d.value),
-                          borderColor: 'orange',
-                          fill: false
-                        },
-                        {
-                          label: 'Temp (°F)',
-                          data: tempF.map(d => d.value),
-                          borderColor: 'purple',
-                          fill: false
-                        }
-                      ]
-                    },
-                    options: chartOptions,
-                    plugins: [ChartDataLabels]
-                  });
+                    let lastSys = null;
+                    let lastDia = null;
 
-                  // Blood Pressure (systolic + diastolic)
-                  const bpSys = sortByTime(data["BP Systolic"] || []);
-                  const bpDia = sortByTime(data["BP Diastolic"] || []);
-                  new Chart(document.getElementById("chartBP"), {
-                    type: 'line',
-                    data: {
-                      labels: bpSys.length ? bpSys.map(d => d.time) : bpDia.map(d => d.time),
-                      datasets: [
-                        {
-                          label: 'Systolic',
-                          data: bpSys.map(d => d.value),
-                          borderColor: 'brown',
-                          fill: false
-                        },
-                        {
-                          label: 'Diastolic',
-                          data: bpDia.map(d => d.value),
-                          borderColor: 'gray',
-                          fill: false
-                        }
-                      ]
-                    },
-                    options: chartOptions,
-                    plugins: [ChartDataLabels]
-                  });
+                    allTimes.forEach(time => {
+                      const sysEntry = bpSys.find(d => d.time === time);
+                      const diaEntry = bpDia.find(d => d.time === time);
+
+                      if (sysEntry) {
+                        lastSys = sysEntry.value; // update systolic
+                      }
+                      if (diaEntry) {
+                        lastDia = diaEntry.value; // update diastolic
+                      }
+
+                      // Push current known values (holding last if no update at this time)
+                      sysValues.push(lastSys);
+                      diaValues.push(lastDia);
+                    });
+
+                    new Chart(document.getElementById("chartBP"), {
+                      type: 'line',
+                      data: {
+                        labels: allTimes,
+                        datasets: [
+                          {
+                            label: 'Systolic',
+                            data: sysValues,
+                            borderColor: 'brown',
+                            fill: false
+                          },
+                          {
+                            label: 'Diastolic',
+                            data: diaValues,
+                            borderColor: 'gray',
+                            fill: false
+                          }
+                        ]
+                      },
+                      options: chartOptions,
+                      plugins: [ChartDataLabels]
+                    });
                 });
           }
           document.getElementById('modalContent').innerHTML = html;
@@ -754,7 +800,7 @@
                     systolic:  document.getElementById('editSys').value,
                     diastolic: document.getElementById('editDia').value,
                 },
-                lastUpdated: new Date().toISOString()
+                lastUpdated: getTimestamp()
             };
 
             const clean = validatePatient(raw);
