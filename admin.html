@@ -185,9 +185,12 @@
         const toggleNewPwBtn = document.getElementById('toggle_new_pw');
         const toggleNewPwIcon = document.getElementById('toggle_new_pw_icon');
 
-        let resetTargetId = null;
-        let resetTargetName = null;
-        let deleteTargetId = null;
+        let currentTarget = {
+            id: null,
+            name: null,
+            accessLevel: null
+        };
+
 
         function escapeHtml(s) {
             return (s||'').toString()
@@ -275,9 +278,9 @@
 
                 const deleteBtn = isSelf
                     ? '<button disabled aria-disabled="true" title="You cannot delete your own account" class="delete-btn opacity-50 cursor-not-allowed px-2 py-1 rounded">Delete</button>'
-                    : '<button data-id="' + escapeHtml(u.hospital_id || '') + '" class="delete-btn text-red-600 hover:underline px-2 py-1 rounded">Delete</button>';
+                    : `<button data-id="${escapeHtml(u.hospital_id || '')}" data-name="${nameEsc}" data-access="${accessEsc}" class="delete-btn text-red-600 hover:underline px-2 py-1 rounded">Delete</button>`;
 
-                const resetBtn = '<button data-id="' + escapeHtml(u.hospital_id || '') + '" data-name="' + nameEsc + '" class="reset-btn text-blue-600 hover:underline px-2 py-1 rounded">Reset</button>';
+                const resetBtn = `<button data-id="${escapeHtml(u.hospital_id || '')}" data-name="${nameEsc}" data-access="${accessEsc}" class="reset-btn text-blue-600 hover:underline px-2 py-1 rounded">Reset</button>`;
 
                 const row = document.createElement('tr');
                 row.innerHTML =
@@ -310,46 +313,79 @@
             }
         });
 
+        // log all actions
+        async function logAdminAction({ targetId, targetName, targetAccessLevel, action }) {
+            const adminId = window.currentUserId || 'unknown';
+            const adminName = sessionStorage.getItem('user_name') || 'Unknown Admin';
+
+            const payload = {
+                adminId,
+                adminName,
+                targetId,
+                targetName,
+                targetAccessLevel,
+                action
+            };
+
+            const { ok, body } = await safeFetch('/api/admin-logs', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!ok) {
+                console.error('Admin log failed:', body?.error || body);
+            }
+        }
 
         // delete
         function handleDeleteClick(el) {
-            deleteTargetId = el?.dataset?.id || null;
-            if (!deleteTargetId) return;
-            // safety: prevent deleting self even if button somehow not disabled
-            if (currentUserId && deleteTargetId === currentUserId) {
+            currentTarget.id = el.dataset.id || null;
+            currentTarget.name = el.dataset.name || '';
+            currentTarget.accessLevel = el.dataset.access || '';
+
+            if (!currentTarget.id) return;
+            if (currentTarget.id === currentUserId) {
                 showToast('error', 'You cannot delete your own account.');
                 return;
             }
-            confirmDeleteText.textContent = 'Delete user "' + deleteTargetId + '"? This action cannot be undone.';
+
+            confirmDeleteText.textContent = `Delete user "${currentTarget.name || currentTarget.id}"? This action cannot be undone.`;
             confirmDeleteModal.classList.remove('hidden');
         }
 
         confirmDeleteYes.addEventListener('click', async () => {
-            if (!deleteTargetId) return;
-            // extra check
-            if (currentUserId && deleteTargetId === currentUserId) {
-                showToast('error', 'You cannot delete your own account.');
-                confirmDeleteModal.classList.add('hidden');
-                deleteTargetId = null;
+            if (!currentTarget.id) return;
+
+            const { ok, body } = await safeFetch(`/api/users/${encodeURIComponent(currentTarget.id)}`, { method: 'DELETE' });
+            if (!ok) {
+                showToast('error', body?.error || 'Delete failed');
                 return;
             }
-            const { ok, body } = await safeFetch('/api/users/' + encodeURIComponent(deleteTargetId), { method: 'DELETE' });
-            if (!ok) { showToast('error', body?.error || 'Delete failed'); return; }
-            showToast('success', 'Deleted ' + deleteTargetId);
+
+            showToast('success', `Deleted ${currentTarget.name || currentTarget.id}`);
+
+            await logAdminAction({
+                targetId: currentTarget.id,
+                targetName: currentTarget.name,
+                targetAccessLevel: currentTarget.accessLevel,
+                action: 'delete_user'
+            });
+
             confirmDeleteModal.classList.add('hidden');
-            deleteTargetId = null;
+            currentTarget = { id: null, name: null, accessLevel: null };
             fetchUsers();
         });
 
         confirmDeleteNo.addEventListener('click', () => {
             confirmDeleteModal.classList.add('hidden');
-            deleteTargetId = null;
+            currentTarget = { id: null, name: null, accessLevel: null };
         });
 
         confirmDeleteModal.addEventListener('click', (e) => {
             if (e.target === confirmDeleteModal) {
                 confirmDeleteModal.classList.add('hidden');
-                deleteTargetId = null;
+                currentTarget = { id: null, name: null, accessLevel: null };
             }
         });
 
@@ -375,30 +411,30 @@
         })();
 
         function handleResetClick(btnEl) {
-            resetTargetId = btnEl.dataset.id || null;
-            resetTargetName = btnEl.dataset.name || '';
-            confirmResetText.textContent = 'Reset password for ' + (resetTargetName || resetTargetId) + '?';
+            currentTarget.id = btnEl.dataset.id || null;
+            currentTarget.name = btnEl.dataset.name || '';
+            currentTarget.accessLevel = btnEl.dataset.access || '';
+
+            confirmResetText.textContent = `Reset password for "${currentTarget.name || currentTarget.id}"?`;
             confirmResetModal.classList.remove('hidden');
         }
 
         confirmResetYes.addEventListener('click', () => {
             confirmResetModal.classList.add('hidden');
-            resetPwUser.textContent = 'Reset password for ' + (resetTargetName || resetTargetId);
+            resetPwUser.textContent = 'Reset password for ' + (currentTarget.name || currentTarget.id);
             resetPwModal.classList.remove('hidden');
             setTimeout(() => resetNewPwInput.focus(), 120);
         });
 
         confirmResetNo.addEventListener('click', () => {
             confirmResetModal.classList.add('hidden');
-            resetTargetId = null;
-            resetTargetName = null;
+            currentTarget = { id: null, name: null, accessLevel: null };
         });
 
         confirmResetModal.addEventListener('click', (e) => {
             if (e.target === confirmResetModal) {
                 confirmResetModal.classList.add('hidden');
-                resetTargetId = null;
-                resetTargetName = null;
+                currentTarget = { id: null, name: null, accessLevel: null };
             }
         });
 
@@ -406,8 +442,7 @@
             if (e.target === resetPwModal) {
                 resetPwModal.classList.add('hidden');
                 resetPwForm.reset();
-                resetTargetId = null;
-                resetTargetName = null;
+                currentTarget = { id: null, name: null, accessLevel: null };
             }
         });
 
@@ -426,8 +461,7 @@
         cancelResetPw.addEventListener('click', () => {
             resetPwModal.classList.add('hidden');
             resetPwForm.reset();
-            resetTargetId = null;
-            resetTargetName = null;
+            currentTarget = { id: null, name: null, accessLevel: null };
             resetNewPwInput.type = 'password';
             toggleNewPwIcon.textContent = 'visibility';
         });
@@ -448,24 +482,29 @@
                 return;
             }
 
-            if (!resetTargetId) {
+            if (!currentTarget.id) {
                 showToast('error', 'No user selected for reset.');
                 return;
             }
 
-            const { ok, body } = await safeFetch('/api/users/' + encodeURIComponent(resetTargetId) + '/reset', {
+            const { ok, body } = await safeFetch('/api/users/' + encodeURIComponent(currentTarget.id) + '/reset', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ newPassword: newPw })
             });
             if (!ok) return showToast('error', body?.error || 'Reset failed');
             showToast('success', 'Password reset successfully');
+            await logAdminAction({
+                targetId: currentTarget.id,
+                targetName: currentTarget.name,
+                targetAccessLevel: currentTarget.accessLevel,
+                action: 'reset_password'
+            });
             resetPwModal.classList.add('hidden');
             resetPwForm.reset();
-            resetTargetId = null;
-            resetTargetName = null;
             resetNewPwInput.type = 'password';
             toggleNewPwIcon.textContent = 'visibility';
+            currentTarget = { id: null, name: null, accessLevel: null };
             fetchUsers();
         });
 
@@ -500,6 +539,13 @@
                 return;
             }
             showToast('success','User added');
+            await logAdminAction({
+                targetId: formData.hospital_id,
+                targetName: formData.name,
+                targetAccessLevel: formData.access_level,
+                action: 'create_user'
+            });
+
             addUserForm.reset();
             addUserModal.classList.add('hidden');
             submitAddUser.disabled = false;

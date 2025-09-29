@@ -251,8 +251,7 @@ app.get('/api/audit-logs', (req, res) => {
       a.user_id AS userId, a.user_name AS userName,
       a.patient_id AS patientId, COALESCE(p.name, a.patient_id) AS patientName,
       a.field, a.old_value AS oldValue, a.new_value AS newValue,
-      DATE_FORMAT(a.timestamp, '%m/%d/%y') AS date,
-      DATE_FORMAT(a.timestamp, '%H:%i') AS time
+      DATE_FORMAT(a.timestamp, '%Y-%m-%dT%H:%i:%sZ') AS timestamp
     FROM audit_logs a
     LEFT JOIN patients p ON a.patient_id = p.id
     ORDER BY a.timestamp DESC
@@ -267,13 +266,70 @@ app.get('/api/audit-logs', (req, res) => {
         acc[key] = {
           userId: row.userId, userName: row.userName,
           patientId: row.patientId, patientName: row.patientName,
-          date: row.date, time: row.time, edits: []
+          timestamp: row.timestamp, edits: []
         };
       }
       acc[key].edits.push({ field: row.field, from: row.oldValue, to: row.newValue });
       return acc;
     }, {});
     res.json(Object.values(grouped));
+  });
+});
+
+// get admin logs
+app.get('/api/admin-logs', (req, res) => {
+    const sql = `
+        SELECT
+            admin_id AS adminId,
+            admin_name AS adminName,
+            target_id AS targetId,
+            target_name AS targetName,
+            target_access_level AS targetAccessLevel,
+            action,
+            DATE_FORMAT(timestamp, '%Y-%m-%dT%H:%i:%sZ') AS timestamp
+        FROM admin_logs
+        ORDER BY timestamp DESC
+        LIMIT 1000
+    `;
+
+    hospitalDB.query(sql, (err, results) => {
+        if (err) {
+            console.error("[db] GET /api/admin-logs error:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+        res.json(results);
+    });
+});
+
+// logs action from admin dashboard
+app.put('/api/admin-logs', (req, res) => {
+  const {
+    adminId,
+    adminName,
+    targetId,
+    targetName,
+    targetAccessLevel,
+    action
+  } = req.body;
+
+  if (!adminId || !adminName || !targetId || !action) {
+    return res.status(400).json({ error: 'Missing required fields: adminId, adminName, targetId, action' });
+  }
+
+  const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const sql = `
+    INSERT INTO admin_logs
+    (admin_id, admin_name, target_id, target_name, target_access_level, action, timestamp)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `;
+  const values = [adminId, adminName, targetId, targetName || '', targetAccessLevel || '', action, timestamp];
+
+  hospitalDB.query(sql, values, (err, result) => {
+    if (err) {
+      console.error('[db] PUT /api/admin-logs error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    return res.json({ success: true, message: 'Admin action logged successfully' });
   });
 });
 

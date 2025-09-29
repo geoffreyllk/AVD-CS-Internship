@@ -31,6 +31,24 @@ async function setupDatabases() {
     `);
     
     console.log('✅ Hospital database setup completed');
+
+    // admin_logs
+    await connection.promise().query(`
+      CREATE TABLE IF NOT EXISTS admin_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        admin_id VARCHAR(50) NOT NULL,
+        admin_name VARCHAR(100) NOT NULL,
+        target_id VARCHAR(50) NOT NULL,
+        target_name VARCHAR(100) NOT NULL,
+        target_access_level ENUM('admin', 'employee') NOT NULL,
+        action ENUM('create_user', 'delete_user', 'reset_password') NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX (admin_id),
+        INDEX (target_id),
+        INDEX (timestamp)
+      )
+    `);
+    console.log('✅ Admin logs table created');
     
     // Create patient database and tables
     console.log('Creating patient database...');

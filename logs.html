@@ -52,10 +52,61 @@
     </nav>
 
     <main class="flex-grow p-4">
+        <!-- admin logs -->
+        <div class="max-w-7xl mx-auto bg-white shadow rounded p-4 mb-4">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                <div class="flex items-center gap-4 w-full md:w-2/3">
+                    <h2 class="text-lg font-semibold uppercase whitespace-nowrap">Admin Logs</h2>
+                    <div class="relative w-full max-w-xs">
+                        <input id="adminSearchInput" type="text" placeholder="Search User or Patient…" class="w-full border border-gray-300 rounded px-3 py-2 pr-8 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                        <button id="adminClearSearch" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 text-lg"> &times; </button>
+                    </div>
+                </div>
+                <div class="flex flex-wrap md:flex-nowrap items-center gap-4 w-full md:w-auto">
+                    <select id="adminSortSelect" class="border border-gray-300 rounded px-2 sm:px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="recent">Most Recent</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="user-asc">User Name A–Z</option>
+                        <option value="user-desc">User Name Z–A</option>
+                    </select>
+                    <select id="adminDateFilter" class="border border-gray-300 rounded px-2 sm:px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="all">All Time</option>
+                        <option value="7">Last 7 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                    </select>
+                    <button id="adminDownloadCsv" class="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700" title="Download CSV">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Logs Container -->
+            <div id="adminLogsContainer" class="border rounded-lg overflow-hidden"></div>
+
+            <!-- Loading Indicator -->
+            <div id="adminLoadingIndicator" class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
+                <p class="mt-2 text-gray-600">Loading logs...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="adminEmptyState" class="hidden text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No logs found</h3>
+                <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filter</p>
+            </div>
+        </div>
+
+        <!-- patient logs -->
         <div class="max-w-7xl mx-auto bg-white shadow rounded p-4">
             <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <div class="flex items-center gap-4 w-full md:w-2/3">
-                    <h2 class="text-lg font-semibold uppercase whitespace-nowrap">Log of Events</h2>
+                    <h2 class="text-lg font-semibold uppercase whitespace-nowrap">Patient Logs</h2>
                     <div class="relative w-full max-w-xs">
                         <input id="searchInput" type="text" placeholder="Search User or Patient…" class="w-full border border-gray-300 rounded px-3 py-2 pr-8 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                         <button id="clearSearch" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 text-lg"> &times; </button>
@@ -136,164 +187,205 @@
     </footer>
 
     <script>
-        // State management
-        let allLogs = [];
-        let filteredLogs = [];
-        let logsPerPage = 10; // now mutable from dropdown
-        let currentPage = 1;
-
-        // DOM Elements
-        const logsContainer = document.getElementById('logsContainer');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const emptyState = document.getElementById('emptyState');
-        const searchInput = document.getElementById('searchInput');
-        const clearSearch = document.getElementById('clearSearch');
-        const sortSelect = document.getElementById('sortSelect');
-        const dateFilter = document.getElementById('dateFilter');
-
-        // Fetch logs from server
-        async function fetchLogs() {
-            try {
-                showLoading();
-                const response = await fetch('/api/audit-logs');
-
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                allLogs = data;
-
-                // Apply any saved filters
-                applyFilters();
-
-            } catch (error) {
-                console.error('Error fetching logs:', error);
-                showError('Failed to load logs. Please try again later.');
+        // --- Shared State Management ---
+        const logsState = {
+            patient: {
+                all: [],
+                filtered: [],
+                logsPerPage: 10,
+                currentPage: 1
+            },
+            admin: {
+                all: [],
+                filtered: [],
+                logsPerPage: 10,
+                currentPage: 1
             }
+        };
+
+        // --- Context Configurations ---
+        const logConfigs = {
+            patient: {
+                api: '/api/audit-logs',
+                container: 'logsContainer',
+                loading: 'loadingIndicator',
+                empty: 'emptyState',
+                search: 'searchInput',
+                clear: 'clearSearch',
+                sort: 'sortSelect',
+                date: 'dateFilter',
+                downloadBtn: 'downloadCsv',
+                modal: 'downloadModal',
+                downloadCurrent: 'downloadCurrentPage',
+                downloadAll: 'downloadAllPages',
+                modalClose: 'closeDownloadModal',
+                pagination: 'paginationContainer'
+            },
+            admin: {
+                api: '/api/admin-logs',
+                container: 'adminLogsContainer',
+                loading: 'adminLoadingIndicator',
+                empty: 'adminEmptyState',
+                search: 'adminSearchInput',
+                clear: 'adminClearSearch',
+                sort: 'adminSortSelect',
+                date: 'adminDateFilter',
+                downloadBtn: 'adminDownloadCsv',
+                modal: 'downloadModal',
+                downloadCurrent: 'downloadCurrentPage',
+                downloadAll: 'downloadAllPages',
+                modalClose: 'closeDownloadModal',
+                pagination: 'adminPaginationContainer'
+            }
+        };
+
+        // --- Helpers ---
+        function getEl(id) {
+            return document.getElementById(id);
         }
 
-        // Apply filters and search
-        function applyFilters() {
-            filteredLogs = [...allLogs];
-
-            // Apply search filter
-            const searchTerm = searchInput.value.trim().toLowerCase();
-            if (searchTerm) {
-                filteredLogs = filteredLogs.filter(log =>
-                    log.userName.toLowerCase().includes(searchTerm) ||
-                    log.patientName.toLowerCase().includes(searchTerm)
-                );
-            }
-
-            // Apply date filter
-            const daysFilter = dateFilter.value;
-            if (daysFilter !== 'all') {
-                const cutoffDate = new Date();
-                cutoffDate.setDate(cutoffDate.getDate() - parseInt(daysFilter));
-
-                filteredLogs = filteredLogs.filter(log => {
-                    const logDate = parseLogDate(log.date, log.time);
-                    return logDate >= cutoffDate;
-                });
-            }
-
-            // Apply sorting
-            const sortOption = sortSelect.value;
-            switch(sortOption) {
-                case 'recent':
-                    filteredLogs.sort((a, b) => {
-                        const dateA = parseLogDate(a.date, a.time);
-                        const dateB = parseLogDate(b.date, b.time);
-                        return dateB - dateA;
-                    });
-                    break;
-                case 'oldest':
-                    filteredLogs.sort((a, b) => {
-                        const dateA = parseLogDate(a.date, a.time);
-                        const dateB = parseLogDate(b.date, b.time);
-                        return dateA - dateB;
-                    });
-                    break;
-                case 'user-asc':
-                    filteredLogs.sort((a, b) => a.userName.localeCompare(b.userName));
-                    break;
-                case 'user-desc':
-                    filteredLogs.sort((a, b) => b.userName.localeCompare(a.userName));
-                    break;
-            }
-
-            // Ensure currentPage is within range after filtering
-            const totalPages = Math.max(1, Math.ceil(filteredLogs.length / logsPerPage));
-            if (currentPage > totalPages) currentPage = totalPages;
-            if (currentPage < 1) currentPage = 1;
-
-            renderLogs();
-        }
-
-        // Parse date from log format (MM/DD/YY)
         function parseLogDate(dateStr, timeStr) {
+            if (!dateStr) return new Date(0);
             const [month, day, yearShort] = dateStr.split('/');
             const year = 2000 + parseInt(yearShort);
             return new Date(year, parseInt(month) - 1, parseInt(day));
         }
 
-        // Format date for display
-        function formatDate(dateStr, timeStr) {
-            const date = parseLogDate(dateStr, timeStr);
-            return date.toLocaleDateString() + ' ' + timeStr;
+        //TIME FUNCTION
+        function getTimestamp(utcString) {
+            if (!utcString) return "N/A";
+            const date = new Date(utcString);
+            return date.toLocaleString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
         }
 
-        // Render logs to the page
-        function renderLogs() {
-            hideLoading();
+        // --- Fetch Logs ---
+        async function fetchLogs(ctx) {
+            const cfg = logConfigs[ctx];
+            try {
+                showLoading(ctx);
+                const response = await fetch(cfg.api);
+                if (!response.ok) throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                const data = await response.json();
+                logsState[ctx].all = data;
+                applyFilters(ctx);
+            } catch (error) {
+                console.error(`Error fetching ${ctx} logs:`, error);
+                showError(ctx, 'Failed to load logs. Please try again later.');
+            }
+        }
 
-            // Always calculate totalPages with a minimum of 1 so pagination still shows
-            const totalPages = Math.max(1, Math.ceil(filteredLogs.length / logsPerPage));
+        // --- Filters ---
+        function applyFilters(ctx) {
+            const state = logsState[ctx];
+            const cfg = logConfigs[ctx];
 
-            // Clamp current page
-            if (currentPage > totalPages) currentPage = totalPages;
-            if (currentPage < 1) currentPage = 1;
+            state.filtered = [...state.all];
 
-            if (filteredLogs.length === 0) {
-                emptyState.classList.remove('hidden');
-                logsContainer.innerHTML = '';
-                // Still render pagination (even when there are 0 logs)
-                renderPagination(totalPages);
-                return;
+            // search
+            const searchTerm = getEl(cfg.search).value.trim().toLowerCase();
+            if (searchTerm) {
+                state.filtered = state.filtered.filter(log =>
+                    (log.userName || '').toLowerCase().includes(searchTerm) ||
+                    (log.patientName || '').toLowerCase().includes(searchTerm) ||
+                    (log.adminName || '').toLowerCase().includes(searchTerm) ||
+                    (log.targetName || '').toLowerCase().includes(searchTerm)
+                );
             }
 
+            // date filter
+            const daysFilter = getEl(cfg.date).value;
+            if (daysFilter !== 'all') {
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - parseInt(daysFilter));
+                state.filtered = state.filtered.filter(log => {
+                    const logDate = parseLogDate(log.date, log.time);
+                    return logDate >= cutoffDate;
+                });
+            }
+
+            // sorting
+            const sortOption = getEl(cfg.sort).value;
+            switch (sortOption) {
+                case 'recent':
+                    state.filtered.sort((a, b) => parseLogDate(b.date, b.time) - parseLogDate(a.date, a.time));
+                    break;
+                case 'oldest':
+                    state.filtered.sort((a, b) => parseLogDate(a.date, a.time) - parseLogDate(b.date, b.time));
+                    break;
+                case 'user-asc':
+                    state.filtered.sort((a, b) => (a.userName || a.adminName).localeCompare(b.userName || b.adminName));
+                    break;
+                case 'user-desc':
+                    state.filtered.sort((a, b) => (b.userName || b.adminName).localeCompare(a.userName || a.adminName));
+                    break;
+            }
+
+            const totalPages = Math.max(1, Math.ceil(state.filtered.length / state.logsPerPage));
+            if (state.currentPage > totalPages) state.currentPage = totalPages;
+            if (state.currentPage < 1) state.currentPage = 1;
+
+            renderLogs(ctx);
+        }
+
+        // --- Render Logs ---
+        function renderLogs(ctx) {
+            const state = logsState[ctx];
+            const cfg = logConfigs[ctx];
+            hideLoading(ctx);
+
+            const container = getEl(cfg.container);
+            const emptyState = getEl(cfg.empty);
+
+            const totalPages = Math.max(1, Math.ceil(state.filtered.length / state.logsPerPage));
+            if (state.currentPage > totalPages) state.currentPage = totalPages;
+            if (state.currentPage < 1) state.currentPage = 1;
+
+            if (state.filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                container.innerHTML = '';
+                renderPagination(ctx, totalPages);
+                return;
+            }
             emptyState.classList.add('hidden');
 
-            const startIndex = (currentPage - 1) * logsPerPage;
-            const endIndex = startIndex + logsPerPage;
-            const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+            const startIndex = (state.currentPage - 1) * state.logsPerPage;
+            const endIndex = startIndex + state.logsPerPage;
+            const paginatedLogs = state.filtered.slice(startIndex, endIndex);
 
-            logsContainer.innerHTML = '';
-
+            container.innerHTML = '';
             paginatedLogs.forEach(log => {
                 const logElement = document.createElement('div');
                 logElement.className = 'border-b';
+
+                const displayName = log.userName || log.adminName || 'Unknown';
+                const displayId = log.userId || log.adminId || 'N/A';
+                const subtitle = log.patientName ? `Patient: ${log.patientName}` : (log.targetName ? `Target: ${log.targetName}` : '');
 
                 logElement.innerHTML = `
                     <div class="log-header flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <span class="text-blue-800 font-medium">${log.userName.charAt(0)}</span>
+                                    <span class="text-blue-800 font-medium">${displayName.charAt(0)}</span>
                                 </div>
                                 <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">${log.userName} (ID: ${log.userId})</div>
-                                    <div class="text-sm text-gray-500">Patient: ${log.patientName}</div>
+                                    <div class="text-sm font-medium text-gray-900">${displayName} (ID: ${displayId})</div>
+                                    <div class="text-sm text-gray-500">${subtitle}</div>
                                 </div>
                             </div>
                         </div>
                         <div class="ml-6 flex-shrink-0">
-                             <div class="log-time flex flex-row text-sm text-gray-500">
-                                <span>${log.date}</span>
-                                <span class="ml-1">${log.time}</span>
-                             </div>
-                            <div class="mt-1 text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">${log.edits.length} changes</div>
+                            <div class="log-time flex flex-row text-sm text-gray-500">
+                                <span>${getTimestamp(log.timestamp)}</span>
+                            </div>
+                            ${log.edits ? `<div class="mt-1 text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">${log.edits.length} changes</div>` : ''}
                         </div>
                         <div class="ml-6 flex-shrink-0">
                             <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -302,319 +394,165 @@
                         </div>
                     </div>
                     <div class="log-details bg-gray-50 px-4 pb-4 hidden">
-                        <div class="pt-2 pb-3 text-sm font-medium text-gray-700">Changes made:</div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                            ${log.edits.map(edit => `
-                                <div class="bg-white border rounded p-3 text-sm">
-                                    <div class="font-medium text-gray-800">${edit.field}</div>
-                                    <div class="mt-1 flex items-center">
-                                        <span class="text-gray-500 line-through mr-2">${edit.from || 'N/A'}</span>
-                                        <span class="text-green-600 font-medium">${edit.to || 'N/A'}</span>
+                        ${log.edits ? `
+                            <div class="pt-2 pb-3 text-sm font-medium text-gray-700">Changes made:</div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                ${log.edits.map(edit => `
+                                    <div class="bg-white border rounded p-3 text-sm">
+                                        <div class="font-medium text-gray-800">${edit.field}</div>
+                                        <div class="mt-1 flex items-center">
+                                            <span class="text-gray-500 line-through mr-2">${edit.from || 'N/A'}</span>
+                                            <span class="text-green-600 font-medium">${edit.to || 'N/A'}</span>
+                                        </div>
                                     </div>
-                                </div>
-                            `).join('')}
-                        </div>
+                                `).join('')}
+                            </div>`
+                        : `<div class="pt-2 pb-3 text-sm text-gray-700">Action: ${log.action || 'N/A'}</div>`}
                     </div>
                 `;
 
-                // Toggle details on click
                 const header = logElement.querySelector('.cursor-pointer');
                 const details = logElement.querySelector('.log-details');
                 const arrow = logElement.querySelector('svg');
-
                 header.addEventListener('click', () => {
                     details.classList.toggle('hidden');
                     arrow.classList.toggle('transform');
                     arrow.classList.toggle('rotate-180');
                 });
 
-                logsContainer.appendChild(logElement);
+                container.appendChild(logElement);
             });
 
-            renderPagination(totalPages);
+            renderPagination(ctx, totalPages);
         }
 
-        // Render pagination controls (always render)
-        function renderPagination(totalPages) {
-            const existing = logsContainer.querySelector('.pagination-container');
-            if (existing) existing.remove();
+        // --- Pagination ---
+        function renderPagination(ctx, totalPages) {
+            const state = logsState[ctx];
+            const cfg = logConfigs[ctx];
+            const container = getEl(cfg.container);
 
-            const paginationContainer = document.createElement('div');
-            paginationContainer.className = 'pagination-container flex flex-row justify-between items-center px-4 py-2 sm:py-3 bg-white border-t';
+            let pagination = getEl(cfg.pagination);
+            if (!pagination) {
+                pagination = document.createElement('div');
+                pagination.id = cfg.pagination;
+                pagination.className = 'pagination-container flex justify-center items-center gap-2 p-4';
+                container.parentNode.appendChild(pagination);
+            }
+            pagination.innerHTML = '';
 
-            // LEFT: rows per page
-            const left = document.createElement('div');
-            left.className = 'flex items-center gap-2';
-            const label = document.createElement('div');
-            label.className = 'text-sm text-gray-700';
-            label.textContent = 'Show rows per page';
-            const select = document.createElement('select');
-            select.className = 'border border-gray-300 rounded px-2 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400';
-            [5,10,15,25,50].forEach(n => {
-                const opt = document.createElement('option');
-                opt.value = n;
-                opt.textContent = n;
-                if (n === logsPerPage) opt.selected = true;
-                select.appendChild(opt);
-            });
-            select.addEventListener('change', (e) => {
-                logsPerPage = parseInt(e.target.value, 10);
-                currentPage = 1;
-                renderLogs();
-            });
-            left.appendChild(label);
-            left.appendChild(select);
-
-            // RIGHT: page controls
-            const right = document.createElement('div');
-            right.className = 'flex items-center gap-2 sm:gap-3';
-
+            // prev
             const prevBtn = document.createElement('button');
-            prevBtn.className = 'px-2 py-1 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed';
-            prevBtn.innerHTML = `<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>`;
-            prevBtn.disabled = currentPage === 1;
-            prevBtn.addEventListener('click', () => {
-                if (currentPage > 1) { currentPage--; renderLogs(); }
-            });
+            prevBtn.textContent = 'Prev';
+            prevBtn.className = `px-3 py-1 rounded ${state.currentPage === 1 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white'}`;
+            prevBtn.disabled = state.currentPage === 1;
+            prevBtn.onclick = () => { state.currentPage--; renderLogs(ctx); };
+            pagination.appendChild(prevBtn);
 
-            const pageWrapper = document.createElement('div');
-            pageWrapper.className = 'flex items-center gap-2';
-
-            const pageSpan = document.createElement('span');
-            pageSpan.className = 'text-sm text-gray-700 cursor-text select-none px-2 py-1 border border-gray-300 rounded bg-gray-50 hover:bg-white';
-            pageSpan.textContent = currentPage;
-
-            // page input
-            const pageInput = document.createElement('input');
-            pageInput.type = 'number';
-            pageInput.min = 1;
-            pageInput.max = totalPages;
-            pageInput.value = String(currentPage);
-
-            pageInput.className = 'text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full text-left';
-            pageInput.style.display = 'none';
-            pageInput.style.minWidth = '3.6rem';
-            pageInput.style.boxSizing = 'border-box';
-
-            // helper to size width so digits aren't hidden behind spinner
-            function computeWidthForValue(val) {
-                const len = Math.max(1, String(val).length);
-                return (len + 3) + 'ch'; // +3ch buffer for spinner + padding
+            // page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = `px-3 py-1 rounded ${i === state.currentPage ? 'bg-blue-600 text-white' : 'bg-gray-200'}`;
+                btn.onclick = () => { state.currentPage = i; renderLogs(ctx); };
+                pagination.appendChild(btn);
             }
 
-            // show input when span clicked
-            pageSpan.addEventListener('click', () => {
-                pageSpan.style.display = 'none';
-                pageInput.style.display = 'inline-block';
-                pageInput.style.width = computeWidthForValue(currentPage);
-                requestAnimationFrame(() => { pageInput.focus(); pageInput.select(); });
-            });
-
-            // resize while typing
-            pageInput.addEventListener('input', () => {
-                pageInput.style.width = computeWidthForValue(pageInput.value || '');
-            });
-
-            // commit / cancel
-            function commitPageInput() {
-                let v = parseInt(String(pageInput.value).replace(/\D/g,''), 10);
-                if (Number.isNaN(v)) v = 1;
-                v = Math.max(1, Math.min(totalPages, v));
-                currentPage = v;
-                pageSpan.textContent = currentPage;
-                pageInput.value = String(currentPage);
-                pageInput.style.display = 'none';
-                pageSpan.style.display = '';
-                renderLogs();
-            }
-            function cancelPageInput() {
-                pageInput.value = String(currentPage);
-                pageInput.style.width = computeWidthForValue(currentPage);
-                pageInput.style.display = 'none';
-                 pageSpan.style.display = '';
-            }
-
-            pageInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') commitPageInput();
-                if (e.key === 'Escape') cancelPageInput();
-            });
-            pageInput.addEventListener('blur', () => commitPageInput());
-
-            const pageOf = document.createElement('div');
-            pageOf.className = 'text-sm text-gray-700';
-            pageOf.textContent = `of ${totalPages}`;
-
+            // next
             const nextBtn = document.createElement('button');
-            nextBtn.className = 'px-2 py-1 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed';
-            nextBtn.innerHTML = `<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>`;
-            nextBtn.disabled = currentPage === totalPages;
-            nextBtn.addEventListener('click', () => {
-                if (currentPage < totalPages) { currentPage++; renderLogs(); }
-            });
-
-            // assemble
-            pageWrapper.appendChild(pageSpan);
-            pageWrapper.appendChild(pageInput);
-            pageWrapper.appendChild(pageOf);
-
-            right.appendChild(prevBtn);
-            right.appendChild(pageWrapper);
-            right.appendChild(nextBtn);
-
-            paginationContainer.appendChild(left);
-            paginationContainer.appendChild(right);
-            logsContainer.appendChild(paginationContainer);
+            nextBtn.textContent = 'Next';
+            nextBtn.className = `px-3 py-1 rounded ${state.currentPage === totalPages ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white'}`;
+            nextBtn.disabled = state.currentPage === totalPages;
+            nextBtn.onclick = () => { state.currentPage++; renderLogs(ctx); };
+            pagination.appendChild(nextBtn);
         }
 
-        // Show loading state
-        function showLoading() {
-            loadingIndicator.classList.remove('hidden');
-            emptyState.classList.add('hidden');
+        // --- Loading / Error ---
+        function showLoading(ctx) {
+            getEl(logConfigs[ctx].loading).classList.remove('hidden');
+            getEl(logConfigs[ctx].empty).classList.add('hidden');
+        }
+        function hideLoading(ctx) {
+            getEl(logConfigs[ctx].loading).classList.add('hidden');
+        }
+        function showError(ctx, message) {
+            hideLoading(ctx);
+            getEl(logConfigs[ctx].container).innerHTML = `<div class="text-center py-12 text-red-600">${message}</div>`;
         }
 
-        // Hide loading state
-        function hideLoading() {
-            loadingIndicator.classList.add('hidden');
-        }
-
-        // Show error message
-        function showError(message) {
-            hideLoading();
-            logsContainer.innerHTML = `
-                <div class="text-center py-12 text-red-600">
-                    <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium">Error Loading Logs</h3>
-                    <p class="mt-1 text-sm">${message}</p>
-                    <button onclick="fetchLogs()" class="mt-4 px-4 py-2 text-sm font-medium text-blue-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                        Try Again
-                    </button>
-                </div>
-            `;
-        }
-
-        // Show download options modal
-        function showDownloadOptions() {
-            if (filteredLogs.length === 0) {
-                alert('No logs to download');
-                return;
-            }
-            document.getElementById('downloadModal').classList.remove('hidden');
-        }
-
-        // Download CSV function with scope parameter
-        function downloadCSV(scope) {
-            let logsToDownload;
-            let filename;
-
+        // --- CSV Download ---
+        function downloadCSV(ctx, scope) {
+            const state = logsState[ctx];
+            let logsToDownload, filename;
             if (scope === 'current') {
-                const startIndex = (currentPage - 1) * logsPerPage;
-                const endIndex = startIndex + logsPerPage;
-                logsToDownload = filteredLogs.slice(startIndex, endIndex);
-                filename = `patient_logs_page_${currentPage}.csv`;
+                const startIndex = (state.currentPage - 1) * state.logsPerPage;
+                const endIndex = startIndex + state.logsPerPage;
+                logsToDownload = state.filtered.slice(startIndex, endIndex);
+                filename = `${ctx}_logs_page_${state.currentPage}.csv`;
             } else {
-                logsToDownload = filteredLogs;
-                filename = 'patient_logs_all_pages.csv';
+                logsToDownload = state.filtered;
+                filename = `${ctx}_logs_all_pages.csv`;
             }
 
-            // Create CSV content
-            let csvContent = "User Name,User ID,Patient Name,Date,Time,Field,From,To\n";
-
+            let csvContent = "Name,ID,Target/Patient,Timestamp,Action/Field,From,To\n";
             logsToDownload.forEach(log => {
-                log.edits.forEach(edit => {
-                    csvContent += `"${log.userName}","${log.userId}","${log.patientName}","${log.date}","${log.time}","${edit.field}","${edit.from || ''}","${edit.to || ''}"\n`;
-                });
-            });
-
-            // Create download link
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', filename);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            // Close modal
-            document.getElementById('downloadModal').classList.add('hidden');
-        }
-
-        function downloadCSV() {
-            if (filteredLogs.length === 0) {
-                alert('No logs to download');
-                return;
-            }
-
-            // Create CSV content
-            let csvContent = "User Name,User ID,Patient Name,Date,Time,Field,From,To\n";
-
-            filteredLogs.forEach(log => {
-                log.edits.forEach(edit => {
-                    csvContent += `"${log.userName}","${log.userId}","${log.patientName}","${log.date}","${log.time}","${edit.field}","${edit.from || ''}","${edit.to || ''}"\n`;
-                });
-            });
-
-            // Create download link
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'patient_logs.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // Initialize the page
-        function init() {
-            // Set up event listeners
-            searchInput.addEventListener('input', () => {
-                currentPage = 1;
-                applyFilters();
-            });
-
-            clearSearch.addEventListener('click', () => {
-                searchInput.value = '';
-                currentPage = 1;
-                applyFilters();
-            });
-
-            sortSelect.addEventListener('change', () => {
-                currentPage = 1;
-                applyFilters();
-            });
-
-            dateFilter.addEventListener('change', () => {
-                currentPage = 1;
-                applyFilters();
-            });
-
-            // Show download options when clicking the download button
-            document.getElementById('downloadCsv').addEventListener('click', showDownloadOptions);
-
-            // Set up modal event listeners
-            document.getElementById('downloadCurrentPage').addEventListener('click', () => downloadCSV('current'));
-            document.getElementById('downloadAllPages').addEventListener('click', () => downloadCSV('all'));
-            document.getElementById('closeDownloadModal').addEventListener('click', () => {
-                document.getElementById('downloadModal').classList.add('hidden');
-            });
-
-            // Close modal when clicking outside
-            document.getElementById('downloadModal').addEventListener('click', (e) => {
-                if (e.target.id === 'downloadModal') {
-                    document.getElementById('downloadModal').classList.add('hidden');
+                const ts = getTimestamp(log.timestamp);
+                if (log.edits) {
+                    log.edits.forEach(edit => {
+                        csvContent += `"${log.userName || log.adminName}","${log.userId || log.adminId}","${log.patientName || log.targetName || ''}","${log.date || ''}","${log.time || ''}","${edit.field}","${edit.from || ''}","${edit.to || ''}"\n`;
+                    });
+                } else {
+                    csvContent += `"${log.adminName}","${log.adminId}","${log.targetName}","${ts}","${log.action}","",""\n`;
                 }
             });
 
-            // Load initial data
-            fetchLogs();
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
         }
-        // Start when page is loaded
-        document.addEventListener('DOMContentLoaded', init);
+
+        let currentDownloadCtx = null;
+        // --- Init ---
+        function initLogs(ctx) {
+            const cfg = logConfigs[ctx];
+            getEl(cfg.search).addEventListener('input', () => { logsState[ctx].currentPage = 1; applyFilters(ctx); });
+            getEl(cfg.clear).addEventListener('click', () => { getEl(cfg.search).value = ''; logsState[ctx].currentPage = 1; applyFilters(ctx); });
+            getEl(cfg.sort).addEventListener('change', () => { logsState[ctx].currentPage = 1; applyFilters(ctx); });
+            getEl(cfg.date).addEventListener('change', () => { logsState[ctx].currentPage = 1; applyFilters(ctx); });
+
+            // Open modal
+            getEl(cfg.downloadBtn).addEventListener('click', () => {
+                if (logsState[ctx].filtered.length === 0) {
+                    alert('No logs to download');
+                    return;
+                }
+                currentDownloadCtx = ctx; // 👈 track who opened modal
+                getEl(cfg.modal).classList.remove('hidden');
+            });
+
+            fetchLogs(ctx);
+        }
+
+        getEl('downloadCurrentPage').addEventListener('click', () => {
+            if (currentDownloadCtx) downloadCSV(currentDownloadCtx, 'current');
+        });
+        getEl('downloadAllPages').addEventListener('click', () => {
+            if (currentDownloadCtx) downloadCSV(currentDownloadCtx, 'all');
+        });
+        getEl('closeDownloadModal').addEventListener('click', () => {
+            getEl('downloadModal').classList.add('hidden');
+        });
+        getEl('downloadModal').addEventListener('click', (e) => {
+            if (e.target.id === 'downloadModal') getEl('downloadModal').classList.add('hidden');
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initLogs('patient');
+            initLogs('admin');
+        });
     </script>
 </body>
 </html>
